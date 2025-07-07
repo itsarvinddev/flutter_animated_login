@@ -30,6 +30,8 @@ dependencies:
   pinput: ^5.0.0
   signals: ^6.0.2
   toastification: ^2.3.0
+  flutter_riverpod: ^2.6.1
+  equatable: ^2.0.7
 
 dev_dependencies:
   flutter_lints: ^5.0.0

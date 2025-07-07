@@ -37,6 +37,8 @@ dependencies:
   flutter_animated_login:
     path: ../
   go_router: ^13.2.1
+  flutter_riverpod:
+  form_builder_validators:
 
 dev_dependencies:
   flutter_test:

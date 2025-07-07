@@ -1,19 +1,17 @@
 library;
 
-export 'package:flutter_intl_phone_field/flutter_intl_phone_field.dart';
-export 'package:pinput/pinput.dart';
-
-export 'src/login.dart';
-export 'src/utils/form_messages.dart';
-export 'src/utils/login_config.dart';
-export 'src/utils/login_data.dart';
-export 'src/utils/login_provider.dart';
-export 'src/utils/page_config.dart';
-export 'src/utils/password_config.dart';
-export 'src/utils/reset_config.dart';
-export 'src/utils/signup_config.dart';
-export 'src/utils/signup_data.dart';
-export 'src/utils/verify_config.dart';
-export 'src/verify.dart';
-export 'src/widget/page.dart';
-export 'src/widget/title.dart';
+export 'src/config/auth_config.dart';
+export 'src/config/login_config.dart';
+export 'src/config/reset_config.dart';
+export 'src/config/signup_config.dart';
+export 'src/config/verify_config.dart';
+// Export constants and enums
+export 'src/constants/enums.dart';
+// Export models
+export 'src/models/auth_data.dart';
+export 'src/models/auth_result.dart';
+export 'src/models/user_data.dart';
+// Export theme
+export 'src/theme/auth_theme_extension.dart';
+// Export main widget and configurations
+export 'src/widgets/auth_flow.dart';
