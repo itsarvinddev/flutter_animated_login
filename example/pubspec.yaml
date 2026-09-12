@@ -20,7 +20,10 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   # Same lint set as the package itself.
-  flutter_lints: ^6.0.0
+  # A range, not a caret, for the same reason as the package's own pubspec:
+  # flutter_lints 6.x needs Dart 3.8, above the Flutter 3.27 floor this
+  # example shares with the package, and CI exercises that floor.
+  flutter_lints: ">=5.0.0 <7.0.0"
 
 flutter:
   uses-material-design: true

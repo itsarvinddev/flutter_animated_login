@@ -171,6 +171,21 @@ jobs:
         # tag is ever cut.
         run: dart pub publish --dry-run
 
+      - name: Install screenshot tooling
+        # pana validates the images named in `screenshots:` by shelling out to
+        # the libwebp tools -- webpinfo, cwebp, dwebp, gif2webp and webpmux
+        # (see pana's lib/src/tool/webp_tool.dart). None of them is on a bare
+        # ubuntu runner, so without this every screenshot is reported as
+        # "No such file or directory", the "Provide documentation" section
+        # scores 0/10, and the score gate fails for code that is fine.
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq webp libwebp-dev
+          # Fail loudly here rather than as a confusing pana result later.
+          for tool in webpinfo cwebp dwebp gif2webp webpmux; do
+            command -v "$tool" >/dev/null || { echo "missing: $tool"; exit 1; }
+          done
+
       - name: Install pana
         run: dart pub global activate pana
 
