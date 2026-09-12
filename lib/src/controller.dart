@@ -1,12 +1,16 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
-// `internal` is not re-exported by flutter/foundation until Flutter 3.35,
-// well above this package's 3.29 floor. The analyzer only calls this import
-// unnecessary because it is looking at a newer SDK than the floor CI builds.
-// ignore: unnecessary_import
-import 'package:meta/meta.dart' show internal;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_intl_phone_field/flutter_intl_phone_field.dart';
+// ChangeNotifier arrives via widgets.dart, which re-exports foundation, so
+// importing foundation here as well is redundant -- the 3.29 analyzer says so.
+//
+// `internal`, though, only joined foundation's re-export list in Flutter 3.35,
+// above this package's 3.29 floor, so it has to come straight from meta. On a
+// newer SDK the analyzer calls *that* redundant instead. The two SDKs disagree
+// about which of these imports is the unnecessary one; this arrangement plus
+// the ignore is the only one clean on both.
+// ignore: unnecessary_import
+import 'package:meta/meta.dart' show internal;
 
 import 'utils/extension.dart';
 
