@@ -157,7 +157,8 @@ class PasswordTextFiledConfig {
     required int currentLength,
     required bool isFocused,
     required int? maxLength,
-  })? buildCounter;
+  })?
+  buildCounter;
 
   /// Scroll physics for the field.
   final ScrollPhysics? scrollPhysics;
@@ -221,7 +222,7 @@ class PasswordTextFiledConfig {
 
   /// Whether stylus handwriting input is accepted.
   @Deprecated(
-    'Renamed to stylusHandwritingEnabled, matching Flutter 3.27. '
+    'Renamed to stylusHandwritingEnabled, matching Flutter 3.29. '
     'Removed in 2.0.0.',
   )
   bool get scribbleEnabled => stylusHandwritingEnabled;
@@ -247,7 +248,8 @@ class PasswordTextFiledConfig {
     BuildContext context,
     PasswordStrength strength,
     double score,
-  )? strengthBuilder;
+  )?
+  strengthBuilder;
 
   /// Whether to warn the user while caps lock is on.
   ///
@@ -395,7 +397,8 @@ class PasswordTextFiledConfig {
       required int currentLength,
       required bool isFocused,
       required int? maxLength,
-    })? buildCounter,
+    })?
+    buildCounter,
     ScrollPhysics? scrollPhysics,
     Iterable<String>? autofillHints,
     AutovalidateMode? autovalidateMode,
@@ -498,7 +501,8 @@ class PasswordTextFiledConfig {
           contentInsertionConfiguration ?? this.contentInsertionConfiguration,
       statesController: statesController ?? this.statesController,
       clipBehavior: clipBehavior ?? this.clipBehavior,
-      stylusHandwritingEnabled: stylusHandwritingEnabled ??
+      stylusHandwritingEnabled:
+          stylusHandwritingEnabled ??
           scribbleEnabled ??
           this.stylusHandwritingEnabled,
       canRequestFocus: canRequestFocus ?? this.canRequestFocus,

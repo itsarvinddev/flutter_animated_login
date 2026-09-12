@@ -80,10 +80,7 @@ class _ThemingDemoState extends State<ThemingDemo> {
         color: scheme.onSurface,
       ),
       subtitleStyle: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant),
-      linkStyle: TextStyle(
-        fontWeight: FontWeight.w600,
-        color: scheme.primary,
-      ),
+      linkStyle: TextStyle(fontWeight: FontWeight.w600, color: scheme.primary),
       // The notifications the package shows for you.
       successColor: isDark ? const Color(0xFF14532D) : const Color(0xFFDCFCE7),
       errorColor: isDark ? const Color(0xFF7F1D1D) : const Color(0xFFFEE2E2),

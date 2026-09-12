@@ -67,7 +67,8 @@ class _PasswordDemoState extends State<PasswordDemo> {
           loginFieldInputType: LoginFieldInputType.email,
         ),
         signupConfig: const SignupConfig(
-          subtitle: 'Pick a password of 8+ characters with a letter and a '
+          subtitle:
+              'Pick a password of 8+ characters with a letter and a '
               'digit.',
           passwordTextFiledConfig: PasswordTextFiledConfig(
             policy: PasswordPolicy.standard(),

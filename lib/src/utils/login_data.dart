@@ -78,7 +78,8 @@ class LoginData {
   /// Redacts [secret], so logging a [LoginData] cannot leak a password or a
   /// one-time code.
   @override
-  String toString() => 'LoginData(name: $name, method: ${method.name}, '
+  String toString() =>
+      'LoginData(name: $name, method: ${method.name}, '
       'secret: ${secret == null ? 'null' : '***'}, '
       'acceptedTerms: $acceptedTerms)';
 

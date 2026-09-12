@@ -15,10 +15,13 @@ dependency bump.
 
 ### Breaking
 
-- **Minimum SDK is Dart 3.6 / Flutter 3.27.** The package already used
-  `Color.withValues`, which landed in Flutter 3.27, while declaring a floor of
-  3.10 — so the declared floor could never actually compile. The new floor is
-  the truthful one.
+- **Minimum SDK is Dart 3.7 / Flutter 3.29.** The old floor of 3.10 could
+  never have compiled: the package already called `Color.withValues`, which
+  arrived in 3.27. 3.29 is where the rest of what it needs lands —
+  `TextFormField.stylusHandwritingEnabled` (3.27 deprecated `scribbleEnabled`
+  without shipping the replacement) and `TapRegionUpCallback`, which pinput 6
+  uses and so requires despite declaring `">=3.7.0"` itself. A CI leg builds
+  on exactly this floor so it cannot drift again.
 - **`flutter_intl_phone_field` moved from 0.0.7 to 0.1.x**, and this package
   re-exports it. Its breaking changes reach you directly: `PhoneNumber` is
   immutable, `PhoneNumber.countryCode` always carries a leading `+`,
@@ -209,7 +212,7 @@ dependency bump.
 - Status messages follow the theme instead of hardcoded `Colors.green.shade400`
   and friends.
 - `PasswordTextFiledConfig.scribbleEnabled` is now
-  `stylusHandwritingEnabled`, matching Flutter 3.27. The old name still works
+  `stylusHandwritingEnabled`, matching Flutter 3.29. The old name still works
   and is deprecated.
 
 ### Deprecated

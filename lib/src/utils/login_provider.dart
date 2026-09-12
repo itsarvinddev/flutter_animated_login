@@ -113,10 +113,10 @@ class LoginProvider {
     this.loading,
     this.loadingColor,
   }) : assert(
-          icon != null || iconWidget != null || button != null,
-          'A LoginProvider needs something to render: pass icon, iconWidget '
-          'or button.',
-        );
+         icon != null || iconWidget != null || button != null,
+         'A LoginProvider needs something to render: pass icon, iconWidget '
+         'or button.',
+       );
 
   /// Whether [message] should be hidden from the user.
   bool shouldSuppress(String? message) {
@@ -154,7 +154,8 @@ class LoginProvider {
       providerNeedsSignUpCallback:
           providerNeedsSignUpCallback ?? this.providerNeedsSignUpCallback,
       transitionDuration: transitionDuration ?? this.transitionDuration,
-      errorsToExcludeFromErrorMessage: errorsToExcludeFromErrorMessage ??
+      errorsToExcludeFromErrorMessage:
+          errorsToExcludeFromErrorMessage ??
           this.errorsToExcludeFromErrorMessage,
       style: style ?? this.style,
       backgroundColor: backgroundColor ?? this.backgroundColor,

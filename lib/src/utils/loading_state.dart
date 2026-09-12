@@ -182,17 +182,17 @@ class _AutoLoadingButtonState extends State<AutoLoadingButton>
   }) {
     final button = switch (widget.variant) {
       AutoLoadingButtonVariant.filled => FilledButton(
-          key: key,
-          onPressed: onPressed,
-          style: widget.style,
-          child: child,
-        ),
+        key: key,
+        onPressed: onPressed,
+        style: widget.style,
+        child: child,
+      ),
       AutoLoadingButtonVariant.text => TextButton(
-          key: key,
-          onPressed: onPressed,
-          style: widget.style,
-          child: child,
-        ),
+        key: key,
+        onPressed: onPressed,
+        style: widget.style,
+        child: child,
+      ),
     };
     if (widget.semanticLabel == null) return button;
     return Semantics(
@@ -225,9 +225,7 @@ class _AutoLoadingButtonState extends State<AutoLoadingButton>
             return FadeTransition(
               opacity: animation,
               child: ScaleTransition(
-                scale: animation.drive(
-                  Tween<double>(begin: 0.95, end: 1.0),
-                ),
+                scale: animation.drive(Tween<double>(begin: 0.95, end: 1.0)),
                 child: child,
               ),
             );
@@ -238,18 +236,20 @@ class _AutoLoadingButtonState extends State<AutoLoadingButton>
             // AnimatedSwitcher nothing to notice, so it never animated.
             key: ValueKey<bool>(loading),
             onPressed: loading ? null : onPressedCallback,
-            child: loading
-                ? (widget.loading ??
-                    SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: widget.loadingColor ??
-                            Theme.of(context).colorScheme.onSurface,
-                        strokeWidth: 2,
-                      ),
-                    ))
-                : widget.child,
+            child:
+                loading
+                    ? (widget.loading ??
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color:
+                                widget.loadingColor ??
+                                Theme.of(context).colorScheme.onSurface,
+                            strokeWidth: 2,
+                          ),
+                        ))
+                    : widget.child,
           ),
         );
       },

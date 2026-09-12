@@ -3,8 +3,9 @@ import 'package:flutter_animated_login/flutter_animated_login.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Key of the email branch of the identity field.
-const Key _emailFieldKey =
-    ValueKey<String>('flutter_animated_login.identity.email');
+const Key _emailFieldKey = ValueKey<String>(
+  'flutter_animated_login.identity.email',
+);
 
 /// The subtitle the signup screen shows with the default [FormMessages].
 const String _signupSubtitle = 'Create an account to get started with our app.';
@@ -21,9 +22,9 @@ Future<void> _pump(WidgetTester tester, Widget login) async {
 
 /// The Material button whose label is [label], whatever its variant.
 Finder _buttonWithText(String label) => find.ancestor(
-      of: find.text(label),
-      matching: find.byWidgetPredicate((widget) => widget is ButtonStyleButton),
-    );
+  of: find.text(label),
+  matching: find.byWidgetPredicate((widget) => widget is ButtonStyleButton),
+);
 
 /// Whether the button labelled [label] accepts taps.
 bool _enabled(WidgetTester tester, String label) {
@@ -38,8 +39,9 @@ Finder _fieldWithLabel(String label) =>
 
 void main() {
   group('login screen', () {
-    testWidgets('renders the title, the identity field and the button',
-        (tester) async {
+    testWidgets('renders the title, the identity field and the button', (
+      tester,
+    ) async {
       await _pump(
         tester,
         const FlutterAnimatedLogin(
@@ -54,8 +56,9 @@ void main() {
 
     // Before 1.0.0 the secondary link row rendered only in password mode, so
     // for the default LoginType.otp both screens were unreachable.
-    testWidgets('otp login reaches the signup and reset screens by link',
-        (tester) async {
+    testWidgets('otp login reaches the signup and reset screens by link', (
+      tester,
+    ) async {
       await _pump(
         tester,
         FlutterAnimatedLogin(
@@ -86,8 +89,9 @@ void main() {
 
     // Before 1.0.0 LoginConfig.copyWith dropped `messages`, so a translated
     // form reverted to English the moment it left the login screen.
-    testWidgets('custom messages reach the signup and reset screens',
-        (tester) async {
+    testWidgets('custom messages reach the signup and reset screens', (
+      tester,
+    ) async {
       const messages = FormMessages(
         signIn: 'ZZ sign in',
         signUp: 'ZZ create account',
@@ -132,8 +136,9 @@ void main() {
       expect(find.text('ZZ sign in'), findsOneWidget);
     });
 
-    testWidgets('the button stays disabled until the identifier is valid',
-        (tester) async {
+    testWidgets('the button stays disabled until the identifier is valid', (
+      tester,
+    ) async {
       await _pump(tester, FlutterAnimatedLogin(onLogin: (_) async => null));
 
       expect(_enabled(tester, 'Continue'), isFalse);
@@ -144,8 +149,9 @@ void main() {
       expect(_enabled(tester, 'Continue'), isTrue);
     });
 
-    testWidgets('password login needs an identifier and a password',
-        (tester) async {
+    testWidgets('password login needs an identifier and a password', (
+      tester,
+    ) async {
       await _pump(
         tester,
         FlutterAnimatedLogin(
@@ -170,8 +176,9 @@ void main() {
 
     // Before 1.0.0 LoginType.otpAndPassword behaved exactly like otp: no
     // password field and no way to choose.
-    testWidgets('otpAndPassword renders a password field and a method toggle',
-        (tester) async {
+    testWidgets('otpAndPassword renders a password field and a method toggle', (
+      tester,
+    ) async {
       await _pump(
         tester,
         FlutterAnimatedLogin(
@@ -192,8 +199,9 @@ void main() {
       expect(_buttonWithText('Continue'), findsOneWidget);
     });
 
-    testWidgets('an external controller drives the flow and reports steps',
-        (tester) async {
+    testWidgets('an external controller drives the flow and reports steps', (
+      tester,
+    ) async {
       final controller = FlutterAnimatedLoginController();
       addTearDown(controller.dispose);
       final steps = <LoginStep>[];
@@ -247,8 +255,9 @@ void main() {
 
     // The whole point of replacing the module-level signals with a per-widget
     // controller.
-    testWidgets('two login widgets in one tree do not share state',
-        (tester) async {
+    testWidgets('two login widgets in one tree do not share state', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1600, 2400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
@@ -280,13 +289,13 @@ void main() {
       await tester.pumpAndSettle();
 
       Finder inFirst(Finder matching) => find.descendant(
-            of: find.byKey(const ValueKey<String>('first')),
-            matching: matching,
-          );
+        of: find.byKey(const ValueKey<String>('first')),
+        matching: matching,
+      );
       Finder inSecond(Finder matching) => find.descendant(
-            of: find.byKey(const ValueKey<String>('second')),
-            matching: matching,
-          );
+        of: find.byKey(const ValueKey<String>('second')),
+        matching: matching,
+      );
 
       await tester.tap(inFirst(find.text('Sign Up')));
       await tester.pumpAndSettle();

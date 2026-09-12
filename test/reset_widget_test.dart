@@ -5,8 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 /// The English defaults every assertion below is written against.
 const FormMessages messages = FormMessages();
 
-const ValueKey<String> emailKey =
-    ValueKey<String>('flutter_animated_login.identity.email');
+const ValueKey<String> emailKey = ValueKey<String>(
+  'flutter_animated_login.identity.email',
+);
 
 /// Gives the test a window big enough for the whole form, so taps never have
 /// to scroll the card first.
@@ -53,18 +54,19 @@ Future<void> submit(WidgetTester tester, Finder button) async {
 }
 
 void main() {
-  testWidgets(
-      'the forgot link opens the reset screen and submits the '
+  testWidgets('the forgot link opens the reset screen and submits the '
       'identifier', (tester) async {
     useLargeSurface(tester);
     final sentTo = <String>[];
 
-    await tester.pumpWidget(harness(
-      onResetPassword: (identifier) async {
-        sentTo.add(identifier);
-        return null;
-      },
-    ));
+    await tester.pumpWidget(
+      harness(
+        onResetPassword: (identifier) async {
+          sentTo.add(identifier);
+          return null;
+        },
+      ),
+    );
     await openResetScreen(tester);
 
     expect(find.text(messages.resetTitle), findsOneWidget);
@@ -73,22 +75,27 @@ void main() {
     await tester.enterText(find.byKey(emailKey), 'ada@example.com');
     await tester.pump();
     await submit(
-        tester, find.widgetWithText(FilledButton, messages.resetButton));
+      tester,
+      find.widgetWithText(FilledButton, messages.resetButton),
+    );
 
     expect(sentTo, <String>['ada@example.com']);
   });
 
-  testWidgets('an empty identifier never reaches onResetPassword',
-      (tester) async {
+  testWidgets('an empty identifier never reaches onResetPassword', (
+    tester,
+  ) async {
     useLargeSurface(tester);
     var calls = 0;
 
-    await tester.pumpWidget(harness(
-      onResetPassword: (_) async {
-        calls++;
-        return null;
-      },
-    ));
+    await tester.pumpWidget(
+      harness(
+        onResetPassword: (_) async {
+          calls++;
+          return null;
+        },
+      ),
+    );
     await openResetScreen(tester);
 
     // The primary button stays disabled until the identifier is valid.
@@ -99,19 +106,22 @@ void main() {
     expect(calls, 0);
   });
 
-  testWidgets('a returned error keeps the user on the reset screen',
-      (tester) async {
+  testWidgets('a returned error keeps the user on the reset screen', (
+    tester,
+  ) async {
     useLargeSurface(tester);
 
-    await tester.pumpWidget(harness(
-      onResetPassword: (_) async => 'No account for that address',
-    ));
+    await tester.pumpWidget(
+      harness(onResetPassword: (_) async => 'No account for that address'),
+    );
     await openResetScreen(tester);
 
     await tester.enterText(find.byKey(emailKey), 'ada@example.com');
     await tester.pump();
     await submit(
-        tester, find.widgetWithText(FilledButton, messages.resetButton));
+      tester,
+      find.widgetWithText(FilledButton, messages.resetButton),
+    );
 
     expect(find.text(messages.resetTitle), findsOneWidget);
     expect(find.text('No account for that address'), findsOneWidget);
@@ -120,46 +130,53 @@ void main() {
     expect(find.text('ada@example.com'), findsOneWidget);
   });
 
-  testWidgets('success returns to login when returnToLoginOnSuccess is set',
-      (tester) async {
+  testWidgets('success returns to login when returnToLoginOnSuccess is set', (
+    tester,
+  ) async {
     useLargeSurface(tester);
 
-    await tester.pumpWidget(harness(
-      onResetPassword: (_) async => null,
-    ));
+    await tester.pumpWidget(harness(onResetPassword: (_) async => null));
     await openResetScreen(tester);
 
     await tester.enterText(find.byKey(emailKey), 'ada@example.com');
     await tester.pump();
     await submit(
-        tester, find.widgetWithText(FilledButton, messages.resetButton));
+      tester,
+      find.widgetWithText(FilledButton, messages.resetButton),
+    );
 
     expect(find.text(messages.resetLinkSent), findsOneWidget);
     expect(find.text(messages.resetTitle), findsNothing);
     expect(find.widgetWithText(FilledButton, messages.signIn), findsOneWidget);
   });
 
-  testWidgets('success stays put when returnToLoginOnSuccess is false',
-      (tester) async {
+  testWidgets('success stays put when returnToLoginOnSuccess is false', (
+    tester,
+  ) async {
     useLargeSurface(tester);
 
-    await tester.pumpWidget(harness(
-      resetConfig: const ResetConfig(returnToLoginOnSuccess: false),
-      onResetPassword: (_) async => null,
-    ));
+    await tester.pumpWidget(
+      harness(
+        resetConfig: const ResetConfig(returnToLoginOnSuccess: false),
+        onResetPassword: (_) async => null,
+      ),
+    );
     await openResetScreen(tester);
 
     await tester.enterText(find.byKey(emailKey), 'ada@example.com');
     await tester.pump();
     await submit(
-        tester, find.widgetWithText(FilledButton, messages.resetButton));
+      tester,
+      find.widgetWithText(FilledButton, messages.resetButton),
+    );
 
     expect(find.text(messages.resetLinkSent), findsOneWidget);
     expect(find.text(messages.resetTitle), findsOneWidget);
   });
 
-  testWidgets('the link back to login returns to the login screen',
-      (tester) async {
+  testWidgets('the link back to login returns to the login screen', (
+    tester,
+  ) async {
     useLargeSurface(tester);
 
     await tester.pumpWidget(harness(onResetPassword: (_) async => null));
@@ -173,8 +190,9 @@ void main() {
   });
 
   group('strings', () {
-    testWidgets('title, subtitle and button default to FormMessages',
-        (tester) async {
+    testWidgets('title, subtitle and button default to FormMessages', (
+      tester,
+    ) async {
       useLargeSurface(tester);
       const custom = FormMessages(
         resetTitle: 'Set a new password',
@@ -183,10 +201,9 @@ void main() {
         forgotPassword: 'Lost your password?',
       );
 
-      await tester.pumpWidget(harness(
-        formMessages: custom,
-        onResetPassword: (_) async => null,
-      ));
+      await tester.pumpWidget(
+        harness(formMessages: custom, onResetPassword: (_) async => null),
+      );
       await openResetScreen(tester, label: custom.forgotPassword);
 
       expect(find.text(custom.resetTitle), findsOneWidget);
@@ -208,15 +225,17 @@ void main() {
         resetButton: 'Email me a link',
       );
 
-      await tester.pumpWidget(harness(
-        formMessages: custom,
-        resetConfig: const ResetConfig(
-          title: 'Forgot it?',
-          subtitle: 'Happens to everyone.',
-          buttonText: Text('Send the link'),
+      await tester.pumpWidget(
+        harness(
+          formMessages: custom,
+          resetConfig: const ResetConfig(
+            title: 'Forgot it?',
+            subtitle: 'Happens to everyone.',
+            buttonText: Text('Send the link'),
+          ),
+          onResetPassword: (_) async => null,
         ),
-        onResetPassword: (_) async => null,
-      ));
+      );
       await openResetScreen(tester);
 
       expect(find.text('Forgot it?'), findsOneWidget);

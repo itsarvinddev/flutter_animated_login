@@ -55,7 +55,7 @@ class VerifyConfig {
 
   /// Renders the countdown. Receives the time still to wait.
   final Widget Function(BuildContext context, Duration remaining)?
-      countdownBuilder;
+  countdownBuilder;
 
   /// Called when the countdown reaches zero.
   final VoidCallback? onCooldownFinished;

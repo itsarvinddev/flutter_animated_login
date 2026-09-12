@@ -109,39 +109,39 @@ extension WidgetExtinction on Widget? {
 extension Tost on BuildContext {
   /// Reports a successful action.
   void success(String title, {String? description}) => _show(
-        title,
-        description,
-        AnimatedLoginTheme.of(this).successColor ??
-            Theme.of(this).colorScheme.tertiaryContainer,
-        Theme.of(this).colorScheme.onTertiaryContainer,
-      );
+    title,
+    description,
+    AnimatedLoginTheme.of(this).successColor ??
+        Theme.of(this).colorScheme.tertiaryContainer,
+    Theme.of(this).colorScheme.onTertiaryContainer,
+  );
 
   /// Reports a failed action.
   void error(String title, {String? description}) => _show(
-        title,
-        description,
-        AnimatedLoginTheme.of(this).errorColor ??
-            Theme.of(this).colorScheme.errorContainer,
-        Theme.of(this).colorScheme.onErrorContainer,
-      );
+    title,
+    description,
+    AnimatedLoginTheme.of(this).errorColor ??
+        Theme.of(this).colorScheme.errorContainer,
+    Theme.of(this).colorScheme.onErrorContainer,
+  );
 
   /// Reports something neutral.
   void info(String title, {String? description}) => _show(
-        title,
-        description,
-        AnimatedLoginTheme.of(this).infoColor ??
-            Theme.of(this).colorScheme.secondaryContainer,
-        Theme.of(this).colorScheme.onSecondaryContainer,
-      );
+    title,
+    description,
+    AnimatedLoginTheme.of(this).infoColor ??
+        Theme.of(this).colorScheme.secondaryContainer,
+    Theme.of(this).colorScheme.onSecondaryContainer,
+  );
 
   /// Reports something the user should look at but that did not fail.
   void warning(String title, {String? description}) => _show(
-        title,
-        description,
-        AnimatedLoginTheme.of(this).warningColor ??
-            Theme.of(this).colorScheme.tertiaryContainer,
-        Theme.of(this).colorScheme.onTertiaryContainer,
-      );
+    title,
+    description,
+    AnimatedLoginTheme.of(this).warningColor ??
+        Theme.of(this).colorScheme.tertiaryContainer,
+    Theme.of(this).colorScheme.onTertiaryContainer,
+  );
 
   void _show(
     String title,
@@ -184,8 +184,9 @@ extension Tost on BuildContext {
                     padding: const EdgeInsets.only(top: 2),
                     child: Text(
                       description,
-                      style: theme.textTheme.bodyMedium
-                          ?.copyWith(color: foreground),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: foreground,
+                      ),
                     ),
                   ),
               ],
@@ -233,7 +234,7 @@ class AnimatedStack extends StatelessWidget {
 
   /// Builds the transition between screens.
   final Widget Function(Widget child, Animation<double> animation)
-      transitionBuilder;
+  transitionBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -244,17 +245,18 @@ class AnimatedStack extends StatelessWidget {
       transitionBuilder: transitionBuilder,
       // Keep the outgoing screen out of the semantics tree and out of the
       // enclosing Form while it fades away.
-      layoutBuilder: (currentChild, previousChildren) => Stack(
-        alignment: Alignment.center,
-        children: <Widget>[
-          ...previousChildren.map(
-            (child) => ExcludeFocus(
-              child: ExcludeSemantics(child: IgnorePointer(child: child)),
-            ),
+      layoutBuilder:
+          (currentChild, previousChildren) => Stack(
+            alignment: Alignment.center,
+            children: <Widget>[
+              ...previousChildren.map(
+                (child) => ExcludeFocus(
+                  child: ExcludeSemantics(child: IgnorePointer(child: child)),
+                ),
+              ),
+              if (currentChild != null) currentChild,
+            ],
           ),
-          if (currentChild != null) currentChild,
-        ],
-      ),
       child: KeyedSubtree(
         key: ValueKey<int>(value),
         child: builder(context, value),

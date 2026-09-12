@@ -21,21 +21,21 @@ enum PasswordStrength {
 
   /// A number in `0.0`–`1.0`, for driving a progress bar.
   double get score => switch (this) {
-        PasswordStrength.empty => 0,
-        PasswordStrength.weak => 0.25,
-        PasswordStrength.fair => 0.5,
-        PasswordStrength.good => 0.75,
-        PasswordStrength.strong => 1,
-      };
+    PasswordStrength.empty => 0,
+    PasswordStrength.weak => 0.25,
+    PasswordStrength.fair => 0.5,
+    PasswordStrength.good => 0.75,
+    PasswordStrength.strong => 1,
+  };
 
   /// The localized label for this strength.
   String label(FormMessages messages) => switch (this) {
-        PasswordStrength.empty => '',
-        PasswordStrength.weak => messages.strengthWeak,
-        PasswordStrength.fair => messages.strengthFair,
-        PasswordStrength.good => messages.strengthGood,
-        PasswordStrength.strong => messages.strengthStrong,
-      };
+    PasswordStrength.empty => '',
+    PasswordStrength.weak => messages.strengthWeak,
+    PasswordStrength.fair => messages.strengthFair,
+    PasswordStrength.good => messages.strengthGood,
+    PasswordStrength.strong => messages.strengthStrong,
+  };
 }
 
 /// Rules a password must satisfy.
@@ -94,36 +94,36 @@ class PasswordPolicy {
 
   /// A policy that checks nothing beyond "not empty".
   const PasswordPolicy.none()
-      : minLength = 0,
-        maxLength = null,
-        requireUppercase = false,
-        requireLowercase = false,
-        requireDigit = false,
-        requireSpecial = false,
-        disallow = const <Pattern>[],
-        minStrength = PasswordStrength.empty;
+    : minLength = 0,
+      maxLength = null,
+      requireUppercase = false,
+      requireLowercase = false,
+      requireDigit = false,
+      requireSpecial = false,
+      disallow = const <Pattern>[],
+      minStrength = PasswordStrength.empty;
 
   /// A reasonable starting point: 8 characters with a letter and a digit.
   const PasswordPolicy.standard()
-      : minLength = 8,
-        maxLength = null,
-        requireUppercase = false,
-        requireLowercase = true,
-        requireDigit = true,
-        requireSpecial = false,
-        disallow = const <Pattern>[],
-        minStrength = PasswordStrength.empty;
+    : minLength = 8,
+      maxLength = null,
+      requireUppercase = false,
+      requireLowercase = true,
+      requireDigit = true,
+      requireSpecial = false,
+      disallow = const <Pattern>[],
+      minStrength = PasswordStrength.empty;
 
   /// Stricter: 12 characters across all four character classes.
   const PasswordPolicy.strict()
-      : minLength = 12,
-        maxLength = null,
-        requireUppercase = true,
-        requireLowercase = true,
-        requireDigit = true,
-        requireSpecial = true,
-        disallow = const <Pattern>[],
-        minStrength = PasswordStrength.good;
+    : minLength = 12,
+      maxLength = null,
+      requireUppercase = true,
+      requireLowercase = true,
+      requireDigit = true,
+      requireSpecial = true,
+      disallow = const <Pattern>[],
+      minStrength = PasswordStrength.good;
 
   /// Whether this policy checks anything at all.
   bool get isEmpty =>
@@ -138,8 +138,10 @@ class PasswordPolicy {
 
   /// Every rule [value] breaks, already localized, in the order they should be
   /// shown. Empty when the password is acceptable.
-  List<String> violations(String value,
-      [FormMessages messages = FormMessages.fallback]) {
+  List<String> violations(
+    String value, [
+    FormMessages messages = FormMessages.fallback,
+  ]) {
     final problems = <String>[];
     if (value.length < minLength) {
       problems.add(messages.passwordTooShortFor(minLength));
@@ -176,8 +178,10 @@ class PasswordPolicy {
   /// The first violation of [value], or `null` when it satisfies the policy.
   ///
   /// Shaped for [FormFieldValidator].
-  String? validate(String? value,
-      [FormMessages messages = FormMessages.fallback]) {
+  String? validate(
+    String? value, [
+    FormMessages messages = FormMessages.fallback,
+  ]) {
     final text = value ?? '';
     if (text.isEmpty) return messages.passwordIsRequired;
     final problems = violations(text, messages);

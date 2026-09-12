@@ -28,8 +28,9 @@ class ExampleApp extends StatefulWidget {
 }
 
 class _ExampleAppState extends State<ExampleApp> {
-  final ValueNotifier<ThemeMode> _themeMode =
-      ValueNotifier<ThemeMode>(ThemeMode.system);
+  final ValueNotifier<ThemeMode> _themeMode = ValueNotifier<ThemeMode>(
+    ThemeMode.system,
+  );
 
   @override
   void dispose() {
@@ -38,9 +39,9 @@ class _ExampleAppState extends State<ExampleApp> {
   }
 
   ThemeData _theme(Brightness brightness) => ThemeData(
-        brightness: brightness,
-        colorSchemeSeed: const Color(0xFF4F46E5),
-      );
+    brightness: brightness,
+    colorSchemeSeed: const Color(0xFF4F46E5),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -48,14 +49,15 @@ class _ExampleAppState extends State<ExampleApp> {
       mode: _themeMode,
       child: ValueListenableBuilder<ThemeMode>(
         valueListenable: _themeMode,
-        builder: (context, mode, _) => MaterialApp(
-          title: 'Flutter Animated Login',
-          debugShowCheckedModeBanner: false,
-          themeMode: mode,
-          theme: _theme(Brightness.light),
-          darkTheme: _theme(Brightness.dark),
-          home: const HomeScreen(),
-        ),
+        builder:
+            (context, mode, _) => MaterialApp(
+              title: 'Flutter Animated Login',
+              debugShowCheckedModeBanner: false,
+              themeMode: mode,
+              theme: _theme(Brightness.light),
+              darkTheme: _theme(Brightness.dark),
+              home: const HomeScreen(),
+            ),
       ),
     );
   }
@@ -89,21 +91,24 @@ class Demo {
 const List<Demo> demos = <Demo>[
   Demo(
     title: 'One-time code',
-    blurb: 'Send a code to a phone or an email, verify it, resend it under a '
+    blurb:
+        'Send a code to a phone or an email, verify it, resend it under a '
         'cooldown.',
     icon: Icons.sms_outlined,
     builder: _otpDemo,
   ),
   Demo(
     title: 'Password',
-    blurb: 'Password sign-in, plus a signup screen under a PasswordPolicy '
+    blurb:
+        'Password sign-in, plus a signup screen under a PasswordPolicy '
         'with a strength meter.',
     icon: Icons.password_outlined,
     builder: _passwordDemo,
   ),
   Demo(
     title: 'Sign up with extra fields',
-    blurb: 'A required name, a validated age, a newsletter checkbox — and the '
+    blurb:
+        'A required name, a validated age, a newsletter checkbox — and the '
         'SignupData they produce.',
     icon: Icons.badge_outlined,
     builder: _signupDemo,
@@ -128,7 +133,8 @@ const List<Demo> demos = <Demo>[
   ),
   Demo(
     title: 'Theming',
-    blurb: 'Brand all four screens with one AnimatedLoginTheme, in light and '
+    blurb:
+        'Brand all four screens with one AnimatedLoginTheme, in light and '
         'dark.',
     icon: Icons.palette_outlined,
     builder: _themingDemo,
@@ -184,9 +190,10 @@ class HomeScreen extends StatelessWidget {
               title: Text(demo.title),
               subtitle: Text(demo.blurb),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: demo.builder),
-              ),
+              onTap:
+                  () => Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute<void>(builder: demo.builder)),
             ),
           );
         },
@@ -211,10 +218,7 @@ class _Credentials extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(
-              'The fake backend accepts',
-              style: theme.textTheme.titleSmall,
-            ),
+            Text('The fake backend accepts', style: theme.textTheme.titleSmall),
             const SizedBox(height: 6),
             const SelectableText(
               '${FakeAuth.phone}  ·  ${FakeAuth.email}\n'

@@ -5,20 +5,14 @@ import '../utils/page_config.dart';
 import '../utils/theme.dart';
 
 /// Builds a screen's contents, given the space available to it.
-typedef PageBuilder = Widget Function(
-  BuildContext context,
-  BoxConstraints constraints,
-);
+typedef PageBuilder =
+    Widget Function(BuildContext context, BoxConstraints constraints);
 
 /// The page every screen in the flow is drawn on: a gradient background and a
 /// centred, scrollable card.
 class PageWidget extends StatelessWidget {
   /// Creates a page showing what [builder] returns.
-  const PageWidget({
-    super.key,
-    this.builder,
-    this.config = const PageConfig(),
-  });
+  const PageWidget({super.key, this.builder, this.config = const PageConfig()});
 
   /// Builds the card's contents.
   final PageBuilder? builder;
@@ -42,24 +36,29 @@ class PageWidget extends StatelessWidget {
           constraints:
               config.cardConstraints ?? BoxConstraints(maxWidth: maxWidth),
           margin: config.cardMargin ?? EdgeInsets.all(isMobile ? 20 : 40),
-          decoration: config.cardDecoration ??
+          decoration:
+              config.cardDecoration ??
               BoxDecoration(
-                borderRadius: loginTheme.cardRadius ??
+                borderRadius:
+                    loginTheme.cardRadius ??
                     const BorderRadius.all(Radius.circular(20)),
                 color: loginTheme.cardColor ?? theme.colorScheme.surface,
-                boxShadow: isMobile
-                    ? null
-                    : loginTheme.cardShadow ??
-                        <BoxShadow>[
-                          // Before 1.0.0 this was opaque black at a 100px
-                          // blur, which painted a dark halo over the gradient.
-                          BoxShadow(
-                            color: theme.shadowColor.withValues(alpha: 0.18),
-                            blurRadius: 48,
-                            spreadRadius: -8,
-                            offset: const Offset(0, 16),
-                          ),
-                        ],
+                boxShadow:
+                    isMobile
+                        ? null
+                        : loginTheme.cardShadow ??
+                            <BoxShadow>[
+                              // Before 1.0.0 this was opaque black at a 100px
+                              // blur, which painted a dark halo over the gradient.
+                              BoxShadow(
+                                color: theme.shadowColor.withValues(
+                                  alpha: 0.18,
+                                ),
+                                blurRadius: 48,
+                                spreadRadius: -8,
+                                offset: const Offset(0, 16),
+                              ),
+                            ],
               ),
           // The card paints its own background, so anything inside that
           // draws ink — a CheckboxListTile for consent, a custom signup field
@@ -70,7 +69,8 @@ class PageWidget extends StatelessWidget {
             type: MaterialType.transparency,
             child: AnimatedPadding(
               duration: const Duration(milliseconds: 300),
-              padding: config.cardPadding ??
+              padding:
+                  config.cardPadding ??
                   loginTheme.cardPadding ??
                   EdgeInsets.symmetric(
                     vertical: 40,
@@ -119,7 +119,8 @@ class PageWidget extends StatelessWidget {
                   opacity: isMobile ? 0.0 : 1,
                   duration: const Duration(milliseconds: 300),
                   child: GradientBox(
-                    colors: config.colors ??
+                    colors:
+                        config.colors ??
                         <Color>[
                           loginTheme.backgroundGradientStart ??
                               theme.colorScheme.primary,

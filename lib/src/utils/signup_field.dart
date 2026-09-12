@@ -189,10 +189,8 @@ class SignupField {
 ///   ],
 /// )
 /// ```
-typedef SignupFieldBuilder = Widget Function(
-  BuildContext context,
-  Map<String, String> values,
-);
+typedef SignupFieldBuilder =
+    Widget Function(BuildContext context, Map<String, String> values);
 
 /// Asks the user to accept terms before the form can be submitted.
 ///

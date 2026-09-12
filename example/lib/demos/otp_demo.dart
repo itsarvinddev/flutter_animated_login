@@ -78,20 +78,19 @@ class _OtpDemoState extends State<OtpDemo> {
           // The field switches itself between a country-picker phone field
           // and a plain email field as the user types.
           loginFieldInputType: LoginFieldInputType.phoneOrEmail,
-          textFiledConfig: EmailPhoneTextFiledConfig(
-            initialCountryCode: 'IN',
-          ),
+          textFiledConfig: EmailPhoneTextFiledConfig(initialCountryCode: 'IN'),
         ),
         verifyConfig: VerifyConfig(
           resendCooldown: const Duration(seconds: 15),
           maxResendAttempts: 3,
           // Filling the last cell submits, so nobody has to find a button.
           autoSubmitOnFill: true,
-          countdownBuilder: (context, remaining) => Text(
-            'You can ask for a new code in ${remaining.inSeconds}s',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+          countdownBuilder:
+              (context, remaining) => Text(
+                'You can ask for a new code in ${remaining.inSeconds}s',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
         ),
       ),
     );

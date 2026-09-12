@@ -47,9 +47,9 @@ class SignupData {
   const SignupData.fromProvider({
     required this.additionalSignupData,
     this.acceptedTerms = false,
-  })  : name = null,
-        password = null,
-        phoneNumber = null;
+  }) : name = null,
+       password = null,
+       phoneNumber = null;
 
   /// Whether [name] is a phone number rather than an email address.
   bool get isPhone => phoneNumber != null;
@@ -73,7 +73,8 @@ class SignupData {
 
   /// Redacts [password], so logging a [SignupData] cannot leak it.
   @override
-  String toString() => 'SignupData(name: $name, '
+  String toString() =>
+      'SignupData(name: $name, '
       'password: ${password == null ? 'null' : '***'}, '
       'additionalSignupData: $additionalSignupData, '
       'acceptedTerms: $acceptedTerms)';
@@ -92,15 +93,15 @@ class SignupData {
 
   @override
   int get hashCode => Object.hash(
-        name,
-        password,
-        phoneNumber,
-        acceptedTerms,
-        // Order-independent, so two maps built in a different order agree.
-        Object.hashAllUnordered(
-          additionalSignupData.entries.map((e) => Object.hash(e.key, e.value)),
-        ),
-      );
+    name,
+    password,
+    phoneNumber,
+    acceptedTerms,
+    // Order-independent, so two maps built in a different order agree.
+    Object.hashAllUnordered(
+      additionalSignupData.entries.map((e) => Object.hash(e.key, e.value)),
+    ),
+  );
 
   static bool _sameEntries(Map<String, String> a, Map<String, String> b) {
     if (identical(a, b)) return true;

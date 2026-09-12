@@ -88,7 +88,8 @@ class _TitleWidgetState extends State<TitleWidget> {
             child: Text(
               widget.title ?? '',
               textAlign: TextAlign.center,
-              style: widget.titleStyle ??
+              style:
+                  widget.titleStyle ??
                   loginTheme.titleStyle ??
                   textTheme.headlineMedium,
             ),
@@ -99,7 +100,8 @@ class _TitleWidgetState extends State<TitleWidget> {
             textAlign: TextAlign.center,
             TextSpan(
               text: widget.subtitle ?? '',
-              style: widget.subtitleStyle ??
+              style:
+                  widget.subtitleStyle ??
                   loginTheme.subtitleStyle ??
                   textTheme.titleMedium,
               children: [
@@ -108,7 +110,8 @@ class _TitleWidgetState extends State<TitleWidget> {
                   TextSpan(
                     text: widget.actionLabel ?? 'Edit',
                     style: (loginTheme.linkStyle ?? const TextStyle()).copyWith(
-                      color: loginTheme.linkStyle?.color ??
+                      color:
+                          loginTheme.linkStyle?.color ??
                           theme.colorScheme.primary,
                       fontWeight: FontWeight.bold,
                       decoration: TextDecoration.underline,

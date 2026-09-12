@@ -114,7 +114,7 @@ class AnimatedLoginTheme extends ThemeExtension<AnimatedLoginTheme> {
 
   /// Builds the transition between screens. Defaults to a cross-fade.
   final Widget Function(Widget child, Animation<double> animation)?
-      pageTransitionBuilder;
+  pageTransitionBuilder;
 
   /// Creates a theme. Every property is optional; anything left null falls
   /// back to the package's [ColorScheme]-derived default.
@@ -277,10 +277,16 @@ class AnimatedLoginTheme extends ThemeExtension<AnimatedLoginTheme> {
     if (other is! AnimatedLoginTheme) return this;
     return AnimatedLoginTheme(
       cardColor: Color.lerp(cardColor, other.cardColor, t),
-      backgroundGradientStart:
-          Color.lerp(backgroundGradientStart, other.backgroundGradientStart, t),
-      backgroundGradientEnd:
-          Color.lerp(backgroundGradientEnd, other.backgroundGradientEnd, t),
+      backgroundGradientStart: Color.lerp(
+        backgroundGradientStart,
+        other.backgroundGradientStart,
+        t,
+      ),
+      backgroundGradientEnd: Color.lerp(
+        backgroundGradientEnd,
+        other.backgroundGradientEnd,
+        t,
+      ),
       cardRadius: BorderRadius.lerp(cardRadius, other.cardRadius, t),
       fieldRadius: BorderRadius.lerp(fieldRadius, other.fieldRadius, t),
       buttonRadius: BorderRadius.lerp(buttonRadius, other.buttonRadius, t),
@@ -290,15 +296,27 @@ class AnimatedLoginTheme extends ThemeExtension<AnimatedLoginTheme> {
       cardShadow: BoxShadow.lerpList(cardShadow, other.cardShadow, t),
       titleStyle: TextStyle.lerp(titleStyle, other.titleStyle, t),
       subtitleStyle: TextStyle.lerp(subtitleStyle, other.subtitleStyle, t),
-      buttonTextStyle:
-          TextStyle.lerp(buttonTextStyle, other.buttonTextStyle, t),
+      buttonTextStyle: TextStyle.lerp(
+        buttonTextStyle,
+        other.buttonTextStyle,
+        t,
+      ),
       linkStyle: TextStyle.lerp(linkStyle, other.linkStyle, t),
-      primaryButtonStyle:
-          ButtonStyle.lerp(primaryButtonStyle, other.primaryButtonStyle, t),
-      secondaryButtonStyle:
-          ButtonStyle.lerp(secondaryButtonStyle, other.secondaryButtonStyle, t),
-      providerButtonStyle:
-          ButtonStyle.lerp(providerButtonStyle, other.providerButtonStyle, t),
+      primaryButtonStyle: ButtonStyle.lerp(
+        primaryButtonStyle,
+        other.primaryButtonStyle,
+        t,
+      ),
+      secondaryButtonStyle: ButtonStyle.lerp(
+        secondaryButtonStyle,
+        other.secondaryButtonStyle,
+        t,
+      ),
+      providerButtonStyle: ButtonStyle.lerp(
+        providerButtonStyle,
+        other.providerButtonStyle,
+        t,
+      ),
       // PinTheme has no lerp; snap at the halfway point.
       defaultPinTheme: t < 0.5 ? defaultPinTheme : other.defaultPinTheme,
       focusedPinTheme: t < 0.5 ? focusedPinTheme : other.focusedPinTheme,

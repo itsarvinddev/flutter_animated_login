@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  const ValueKey<String> emailFieldKey =
-      ValueKey<String>('flutter_animated_login.identity.email');
+  const ValueKey<String> emailFieldKey = ValueKey<String>(
+    'flutter_animated_login.identity.email',
+  );
 
   /// Pumps the gallery on a phone-sized surface, the way the demos are meant
   /// to be seen.
@@ -31,8 +32,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets(
-      'the one-time-code demo enables its button only once the '
+  testWidgets('the one-time-code demo enables its button only once the '
       'identifier is valid', (WidgetTester tester) async {
     await pumpGallery(tester);
     expect(find.text('Flutter Animated Login'), findsOneWidget);
@@ -58,8 +58,7 @@ void main() {
     expect(tester.widget<FilledButton>(button).onPressed, isNotNull);
   });
 
-  testWidgets(
-      'the one-time-code demo runs a whole round trip against the '
+  testWidgets('the one-time-code demo runs a whole round trip against the '
       'fake backend', (WidgetTester tester) async {
     await pumpGallery(tester);
     await openDemo(tester, 'One-time code');
@@ -88,8 +87,9 @@ void main() {
     );
   });
 
-  testWidgets('the signup demo renders its additional and custom fields',
-      (WidgetTester tester) async {
+  testWidgets('the signup demo renders its additional and custom fields', (
+    WidgetTester tester,
+  ) async {
     await pumpGallery(tester);
     await openDemo(tester, 'Sign up with extra fields');
 

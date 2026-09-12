@@ -8,8 +8,11 @@ void main() {
       // '+' in the local part and capped the TLD at four characters.
       expect('a+b@c.com'.isEmail, isTrue, reason: 'plus addressing');
       expect('x@y.technology'.isEmail, isTrue, reason: 'long TLD');
-      expect('user@mail.corp.example.co.uk'.isEmail, isTrue,
-          reason: 'subdomains');
+      expect(
+        'user@mail.corp.example.co.uk'.isEmail,
+        isTrue,
+        reason: 'subdomains',
+      );
       expect('bücher@münchen.de'.isEmail, isTrue, reason: 'non-ASCII');
     });
 

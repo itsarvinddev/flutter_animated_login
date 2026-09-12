@@ -352,7 +352,8 @@ class EmailPhoneTextFiledConfig {
     BuildContext context,
     Country country,
     VoidCallback openPicker,
-  )? countrySelectorBuilder;
+  )?
+  countrySelectorBuilder;
 
   /// Shown when the number fails the length check.
   final String? invalidMessage;
@@ -557,7 +558,7 @@ class EmailPhoneTextFiledConfig {
     Widget Function(BuildContext, Country)? flagBuilder,
     Widget Function(BuildContext, Country)? dialCodeBuilder,
     Widget Function(BuildContext, Country, VoidCallback)?
-        countrySelectorBuilder,
+    countrySelectorBuilder,
     Color? cursorColor,
     bool? disableLengthCheck,
     bool? strictValidation,

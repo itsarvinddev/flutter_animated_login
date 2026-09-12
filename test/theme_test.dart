@@ -3,8 +3,9 @@ import 'package:flutter_animated_login/flutter_animated_login.dart';
 import 'package:flutter_animated_login/src/utils/gradient_box.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-const ValueKey<String> emailKey =
-    ValueKey<String>('flutter_animated_login.identity.email');
+const ValueKey<String> emailKey = ValueKey<String>(
+  'flutter_animated_login.identity.email',
+);
 
 const Color kCardColorFromThemeData = Color(0xFF123456);
 const Color kCardColorFromWidget = Color(0xFF654321);
@@ -35,9 +36,10 @@ Widget harness({
 
   return MaterialApp(
     theme: ThemeData(
-      extensions: themeDataExtension == null
-          ? const <ThemeExtension<dynamic>>[]
-          : <ThemeExtension<dynamic>>[themeDataExtension],
+      extensions:
+          themeDataExtension == null
+              ? const <ThemeExtension<dynamic>>[]
+              : <ThemeExtension<dynamic>>[themeDataExtension],
     ),
     home: wrapInScaffold ? Scaffold(body: login) : login,
   );
@@ -59,36 +61,40 @@ BorderRadius fieldRadius(WidgetTester tester) {
 
 void main() {
   group('resolution', () {
-    testWidgets(
-        'a theme on ThemeData.extensions reaches the card and the '
+    testWidgets('a theme on ThemeData.extensions reaches the card and the '
         'fields', (tester) async {
       useWideSurface(tester);
 
-      await tester.pumpWidget(harness(
-        themeDataExtension: const AnimatedLoginTheme(
-          cardColor: kCardColorFromThemeData,
-          fieldRadius: kFieldRadius,
+      await tester.pumpWidget(
+        harness(
+          themeDataExtension: const AnimatedLoginTheme(
+            cardColor: kCardColorFromThemeData,
+            fieldRadius: kFieldRadius,
+          ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
 
       expect(cardDecoration(tester).color, kCardColorFromThemeData);
       expect(fieldRadius(tester), kFieldRadius);
     });
 
-    testWidgets('FlutterAnimatedLogin.theme wins over ThemeData.extensions',
-        (tester) async {
+    testWidgets('FlutterAnimatedLogin.theme wins over ThemeData.extensions', (
+      tester,
+    ) async {
       useWideSurface(tester);
 
-      await tester.pumpWidget(harness(
-        themeDataExtension: const AnimatedLoginTheme(
-          cardColor: kCardColorFromThemeData,
-          fieldRadius: kFieldRadius,
+      await tester.pumpWidget(
+        harness(
+          themeDataExtension: const AnimatedLoginTheme(
+            cardColor: kCardColorFromThemeData,
+            fieldRadius: kFieldRadius,
+          ),
+          widgetTheme: const AnimatedLoginTheme(
+            cardColor: kCardColorFromWidget,
+          ),
         ),
-        widgetTheme: const AnimatedLoginTheme(
-          cardColor: kCardColorFromWidget,
-        ),
-      ));
+      );
       await tester.pumpAndSettle();
 
       expect(cardDecoration(tester).color, kCardColorFromWidget);
@@ -96,16 +102,18 @@ void main() {
       expect(fieldRadius(tester), kFieldRadius);
     });
 
-    testWidgets('with no theme at all the card falls back to the ColorScheme',
-        (tester) async {
+    testWidgets('with no theme at all the card falls back to the ColorScheme', (
+      tester,
+    ) async {
       useWideSurface(tester);
 
       await tester.pumpWidget(harness());
       await tester.pumpAndSettle();
 
-      final scheme = Theme.of(
-        tester.element(find.byType(FlutterAnimatedLogin)),
-      ).colorScheme;
+      final scheme =
+          Theme.of(
+            tester.element(find.byType(FlutterAnimatedLogin)),
+          ).colorScheme;
       expect(cardDecoration(tester).color, scheme.surface);
     });
   });
@@ -196,8 +204,9 @@ void main() {
     const Color c = Color(0xFF778899);
     const Color d = Color(0xFFAABBCC);
 
-    testWidgets('GradientBox paints one, two, three and four colours',
-        (tester) async {
+    testWidgets('GradientBox paints one, two, three and four colours', (
+      tester,
+    ) async {
       for (final colors in const <List<Color>>[
         <Color>[a],
         <Color>[a, b],
@@ -214,7 +223,8 @@ void main() {
         expect(
           tester.takeException(),
           isNull,
-          reason: '${colors.length} colours must paint; before 1.0.0 the '
+          reason:
+              '${colors.length} colours must paint; before 1.0.0 the '
               'hardcoded stops threw for anything but two',
         );
       }
@@ -223,9 +233,9 @@ void main() {
     testWidgets('three colours render inside the page', (tester) async {
       useWideSurface(tester);
 
-      await tester.pumpWidget(harness(
-        pageConfig: const PageConfig(colors: <Color>[a, b, c]),
-      ));
+      await tester.pumpWidget(
+        harness(pageConfig: const PageConfig(colors: <Color>[a, b, c])),
+      );
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
@@ -251,9 +261,9 @@ void main() {
     testWidgets('a single colour renders inside the page', (tester) async {
       useWideSurface(tester);
 
-      await tester.pumpWidget(harness(
-        pageConfig: const PageConfig(colors: <Color>[a]),
-      ));
+      await tester.pumpWidget(
+        harness(pageConfig: const PageConfig(colors: <Color>[a])),
+      );
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
@@ -268,10 +278,12 @@ void main() {
     testWidgets('false adds no Scaffold of its own', (tester) async {
       useWideSurface(tester);
 
-      await tester.pumpWidget(harness(
-        pageConfig: const PageConfig(useScaffold: false),
-        wrapInScaffold: true,
-      ));
+      await tester.pumpWidget(
+        harness(
+          pageConfig: const PageConfig(useScaffold: false),
+          wrapInScaffold: true,
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.byType(Scaffold), findsOneWidget);

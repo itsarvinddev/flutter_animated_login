@@ -21,21 +21,28 @@ topics:
   - ui
 
 environment:
-  # Color.withValues and stylusHandwritingEnabled both landed in Flutter 3.27;
-  # the package already used the first while declaring 3.10, which could not
-  # compile. flutter_intl_phone_field needs 3.22 at minimum.
-  sdk: ">=3.6.0 <4.0.0"
-  flutter: ">=3.27.0"
+  # Flutter 3.29 is the real floor, verified by a CI leg that builds on it:
+  #   - TextFormField.stylusHandwritingEnabled landed in 3.29 (3.27 only
+  #     deprecated the old scribbleEnabled, without shipping the replacement);
+  #   - TapRegionUpCallback landed in 3.29, and pinput 6 uses it, so pinput
+  #     cannot compile below 3.29 despite declaring ">=3.7.0" itself;
+  #   - Color.withValues landed in 3.27, which the package already used while
+  #     declaring 3.10 -- a floor that could never have compiled.
+  sdk: ">=3.7.0 <4.0.0"
+  flutter: ">=3.29.0"
 
 dependencies:
   flutter:
     sdk: flutter
   flutter_intl_phone_field: ^0.1.0
+  # Declared rather than taken from flutter/foundation: that library only
+  # began re-exporting `internal` in Flutter 3.35, well above this floor.
+  meta: ^1.15.0
   pinput: ^6.0.2
 
 dev_dependencies:
   # A range, not a caret: 6.x needs Dart 3.8, while this package supports
-  # Flutter 3.27 (Dart 3.6). CI lints on the newest stable, which picks 6.x.
+  # Flutter 3.29 (Dart 3.7). CI lints on the newest stable, which picks 6.x.
   flutter_lints: ">=5.0.0 <7.0.0"
   flutter_test:
     sdk: flutter

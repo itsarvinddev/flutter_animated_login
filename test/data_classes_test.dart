@@ -149,23 +149,22 @@ void main() {
         },
       );
 
-      expect(identical(a.additionalSignupData, b.additionalSignupData), isFalse,
-          reason: 'the maps must be two separate instances');
+      expect(
+        identical(a.additionalSignupData, b.additionalSignupData),
+        isFalse,
+        reason: 'the maps must be two separate instances',
+      );
       expect(a, b);
       expect(a.hashCode, b.hashCode);
     });
 
     test('two maps built in a different key order hash the same', () {
-      final a = SignupData(additionalSignupData: <String, String>{
-        'a': '1',
-        'b': '2',
-        'c': '3',
-      });
-      final b = SignupData(additionalSignupData: <String, String>{
-        'c': '3',
-        'b': '2',
-        'a': '1',
-      });
+      final a = SignupData(
+        additionalSignupData: <String, String>{'a': '1', 'b': '2', 'c': '3'},
+      );
+      final b = SignupData(
+        additionalSignupData: <String, String>{'c': '3', 'b': '2', 'a': '1'},
+      );
 
       expect(a.additionalSignupData.keys, isNot(b.additionalSignupData.keys));
       expect(a, b);
@@ -173,30 +172,36 @@ void main() {
     });
 
     test('a differing entry, key or length breaks equality', () {
-      final base = SignupData(additionalSignupData: <String, String>{
-        'fullName': 'Ada',
-      });
+      final base = SignupData(
+        additionalSignupData: <String, String>{'fullName': 'Ada'},
+      );
 
       expect(
         base,
-        isNot(SignupData(
-          additionalSignupData: <String, String>{'fullName': 'Grace'},
-        )),
+        isNot(
+          SignupData(
+            additionalSignupData: <String, String>{'fullName': 'Grace'},
+          ),
+        ),
         reason: 'different value',
       );
       expect(
         base,
-        isNot(SignupData(
-          additionalSignupData: <String, String>{'name': 'Ada'},
-        )),
+        isNot(
+          SignupData(additionalSignupData: <String, String>{'name': 'Ada'}),
+        ),
         reason: 'different key',
       );
       expect(
         base,
-        isNot(SignupData(additionalSignupData: <String, String>{
-          'fullName': 'Ada',
-          'company': 'Analytical',
-        })),
+        isNot(
+          SignupData(
+            additionalSignupData: <String, String>{
+              'fullName': 'Ada',
+              'company': 'Analytical',
+            },
+          ),
+        ),
         reason: 'different length',
       );
       expect(base, isNot(const SignupData()));
@@ -226,10 +231,7 @@ void main() {
 
   group('SignupData toString', () {
     test('redacts the password', () {
-      const data = SignupData(
-        name: 'someone@example.com',
-        password: 'hunter2',
-      );
+      const data = SignupData(name: 'someone@example.com', password: 'hunter2');
 
       final text = data.toString();
 

@@ -259,11 +259,9 @@ void main() {
       addTearDown(controller.dispose);
 
       controller.identifierController.text = '98765';
-      controller.updatePhoneNumber(const PhoneNumber(
-        countryISOCode: 'IN',
-        countryCode: '+91',
-        number: '',
-      ));
+      controller.updatePhoneNumber(
+        const PhoneNumber(countryISOCode: 'IN', countryCode: '+91', number: ''),
+      );
 
       expect(controller.isPhone, isTrue);
       // The phone field has not reported a number yet — right after prefill(),
@@ -287,11 +285,9 @@ void main() {
       addTearDown(controller.dispose);
 
       controller.identifierController.text = '98765';
-      controller.updatePhoneNumber(const PhoneNumber(
-        countryISOCode: 'ZZ',
-        countryCode: '',
-        number: '',
-      ));
+      controller.updatePhoneNumber(
+        const PhoneNumber(countryISOCode: 'ZZ', countryCode: '', number: ''),
+      );
 
       expect(controller.isPhone, isTrue);
       expect(controller.identifier, '98765', reason: 'no such country');
@@ -349,8 +345,11 @@ void main() {
 
       controller.identifierController.text = '987';
       expect(controller.isPhone, isTrue);
-      expect(controller.isFormValid, isFalse,
-          reason: 'no number reported and the raw text is too short');
+      expect(
+        controller.isFormValid,
+        isFalse,
+        reason: 'no number reported and the raw text is too short',
+      );
 
       // With no PhoneNumber reported yet the raw text is shape-checked, so a
       // prefilled number does not leave the button disabled until the user
@@ -358,11 +357,13 @@ void main() {
       controller.identifierController.text = '98765';
       expect(controller.isFormValid, isTrue, reason: 'the raw text has shape');
 
-      controller.updatePhoneNumber(const PhoneNumber(
-        countryISOCode: 'IN',
-        countryCode: '+91',
-        number: '98765',
-      ));
+      controller.updatePhoneNumber(
+        const PhoneNumber(
+          countryISOCode: 'IN',
+          countryCode: '+91',
+          number: '98765',
+        ),
+      );
       expect(controller.isFormValid, isFalse, reason: 'too few digits');
 
       controller.updatePhoneNumber(_indianNumber);
@@ -419,8 +420,9 @@ void main() {
 
     test('mixes owned and borrowed controllers correctly', () {
       final identifier = TextFieldController();
-      final controller =
-          FlutterAnimatedLoginController(identifierController: identifier);
+      final controller = FlutterAnimatedLoginController(
+        identifierController: identifier,
+      );
       final password = controller.passwordController as TextFieldController;
 
       controller.dispose();
@@ -441,7 +443,9 @@ void main() {
 
       expect(identical(first, second), isTrue);
       expect(
-          controller.additionalFieldController('company'), isNot(same(first)));
+        controller.additionalFieldController('company'),
+        isNot(same(first)),
+      );
     });
 
     test('their text shows up in additionalFieldValues', () {
@@ -461,10 +465,12 @@ void main() {
 
     test('all of them are disposed with the controller', () {
       final controller = FlutterAnimatedLoginController();
-      final fullName = controller.additionalFieldController('fullName')
-          as TextFieldController;
-      final company = controller.additionalFieldController('company')
-          as TextFieldController;
+      final fullName =
+          controller.additionalFieldController('fullName')
+              as TextFieldController;
+      final company =
+          controller.additionalFieldController('company')
+              as TextFieldController;
 
       controller.dispose();
 

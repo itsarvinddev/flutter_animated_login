@@ -377,11 +377,12 @@ class FormMessages {
       phone: phone ?? this.phone,
       emailOrPhone: emailOrPhone ?? this.emailOrPhone,
       email: email ?? this.email,
-      loginFieldEnterPhoneValidatorEmpty: loginFieldEnterPhoneValidatorEmpty ??
+      loginFieldEnterPhoneValidatorEmpty:
+          loginFieldEnterPhoneValidatorEmpty ??
           this.loginFieldEnterPhoneValidatorEmpty,
       loginFieldEnterPhoneValidatorInvalid:
           loginFieldEnterPhoneValidatorInvalid ??
-              this.loginFieldEnterPhoneValidatorInvalid,
+          this.loginFieldEnterPhoneValidatorInvalid,
       invalidEmail: invalidEmail ?? this.invalidEmail,
       invalidPhoneNumber: invalidPhoneNumber ?? this.invalidPhoneNumber,
       searchCountry: searchCountry ?? this.searchCountry,

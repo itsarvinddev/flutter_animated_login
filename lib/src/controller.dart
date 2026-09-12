@@ -1,5 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
+// `internal` is not re-exported by flutter/foundation until Flutter 3.35,
+// well above this package's 3.29 floor. The analyzer only calls this import
+// unnecessary because it is looking at a newer SDK than the floor CI builds.
+// ignore: unnecessary_import
+import 'package:meta/meta.dart' show internal;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_intl_phone_field/flutter_intl_phone_field.dart';
 
@@ -66,17 +71,17 @@ class FlutterAnimatedLoginController extends ChangeNotifier {
     TextEditingController? passwordController,
     TextEditingController? confirmPasswordController,
     TextEditingController? otpController,
-  })  : _step = initialStep,
-        _countryIsoCode = initialCountryCode,
-        _identifierController = identifierController ?? TextFieldController(),
-        _passwordController = passwordController ?? TextFieldController(),
-        _confirmPasswordController =
-            confirmPasswordController ?? TextFieldController(),
-        _otpController = otpController ?? TextFieldController(),
-        _ownsIdentifier = identifierController == null,
-        _ownsPassword = passwordController == null,
-        _ownsConfirmPassword = confirmPasswordController == null,
-        _ownsOtp = otpController == null {
+  }) : _step = initialStep,
+       _countryIsoCode = initialCountryCode,
+       _identifierController = identifierController ?? TextFieldController(),
+       _passwordController = passwordController ?? TextFieldController(),
+       _confirmPasswordController =
+           confirmPasswordController ?? TextFieldController(),
+       _otpController = otpController ?? TextFieldController(),
+       _ownsIdentifier = identifierController == null,
+       _ownsPassword = passwordController == null,
+       _ownsConfirmPassword = confirmPasswordController == null,
+       _ownsOtp = otpController == null {
     if (initialIdentifier != null) {
       _identifierController.text = initialIdentifier;
     }
@@ -306,10 +311,10 @@ class FlutterAnimatedLoginController extends ChangeNotifier {
   /// The values of every additional signup field, ready for
   /// [SignupData.additionalSignupData].
   Map<String, String> get additionalFieldValues => <String, String>{
-        for (final entry in _additionalControllers.entries)
-          entry.key: entry.value.text,
-        ..._customValues,
-      };
+    for (final entry in _additionalControllers.entries)
+      entry.key: entry.value.text,
+    ..._customValues,
+  };
 
   /// Records a value written by a [SignupFieldBuilder].
   void setCustomValue(String key, String value) {
@@ -341,8 +346,10 @@ class FlutterAnimatedLoginController extends ChangeNotifier {
   /// Tells the controller what the current screen requires, so [isFormValid]
   /// can answer for it.
   @internal
-  void configure(
-      {required bool passwordRequired, required bool consentRequired}) {
+  void configure({
+    required bool passwordRequired,
+    required bool consentRequired,
+  }) {
     if (_passwordRequired == passwordRequired &&
         _consentRequired == consentRequired) {
       return;
@@ -384,7 +391,8 @@ class FlutterAnimatedLoginController extends ChangeNotifier {
     // IntlPhoneField writes the shared text controller synchronously in its
     // own initState, which lands here mid-build. Marking an ancestor dirty
     // then throws, so coalesce those into a single post-frame notification.
-    final duringBuild = phase == SchedulerPhase.persistentCallbacks ||
+    final duringBuild =
+        phase == SchedulerPhase.persistentCallbacks ||
         phase == SchedulerPhase.midFrameMicrotasks;
     if (!duringBuild) {
       notifyListeners();

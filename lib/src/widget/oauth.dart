@@ -85,49 +85,49 @@ class OAuthWidget extends StatelessWidget {
   Widget _buildProviders(BuildContext context, List<LoginProvider> list) {
     return switch (layout) {
       ProviderLayout.fullWidthStacked => Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (var i = 0; i < list.length; i++) ...[
-              if (i > 0) SizedBox(height: spacing),
-              _FullWidthProviderButton(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < list.length; i++) ...[
+            if (i > 0) SizedBox(height: spacing),
+            _FullWidthProviderButton(
+              provider: list[i],
+              semanticLabel: _semanticsFor(list[i]),
+              onPressed: () => _run(context, list[i]),
+            ),
+          ],
+        ],
+      ),
+      // A bare Row overflowed with four providers on a phone, and with three
+      // at 2x text scale. Wrap costs nothing and cannot overflow.
+      ProviderLayout.iconWrap => Wrap(
+        alignment: WrapAlignment.center,
+        spacing: spacing,
+        runSpacing: spacing,
+        children: [
+          for (final provider in list)
+            _IconProviderButton(
+              provider: provider,
+              semanticLabel: _semanticsFor(provider),
+              onPressed: () => _run(context, provider),
+            ),
+        ],
+      ),
+      ProviderLayout.iconRow => Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < list.length; i++) ...[
+            if (i > 0) SizedBox(width: spacing),
+            Flexible(
+              child: _IconProviderButton(
                 provider: list[i],
                 semanticLabel: _semanticsFor(list[i]),
                 onPressed: () => _run(context, list[i]),
               ),
-            ],
+            ),
           ],
-        ),
-      // A bare Row overflowed with four providers on a phone, and with three
-      // at 2x text scale. Wrap costs nothing and cannot overflow.
-      ProviderLayout.iconWrap => Wrap(
-          alignment: WrapAlignment.center,
-          spacing: spacing,
-          runSpacing: spacing,
-          children: [
-            for (final provider in list)
-              _IconProviderButton(
-                provider: provider,
-                semanticLabel: _semanticsFor(provider),
-                onPressed: () => _run(context, provider),
-              ),
-          ],
-        ),
-      ProviderLayout.iconRow => Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (var i = 0; i < list.length; i++) ...[
-              if (i > 0) SizedBox(width: spacing),
-              Flexible(
-                child: _IconProviderButton(
-                  provider: list[i],
-                  semanticLabel: _semanticsFor(list[i]),
-                  onPressed: () => _run(context, list[i]),
-                ),
-              ),
-            ],
-          ],
-        ),
+        ],
+      ),
     };
   }
 }
@@ -148,7 +148,8 @@ class _IconProviderButton extends StatelessWidget {
     if (provider.button != null) return provider.button!;
 
     final loginTheme = AnimatedLoginTheme.of(context);
-    final icon = provider.iconWidget ??
+    final icon =
+        provider.iconWidget ??
         Icon(provider.icon, color: provider.foregroundColor);
 
     return Column(
@@ -167,7 +168,8 @@ class _IconProviderButton extends StatelessWidget {
               child: AutoLoadingButton(
                 transitionDuration: provider.transitionDuration,
                 onPressed: onPressed,
-                style: provider.style ??
+                style:
+                    provider.style ??
                     loginTheme.providerButtonStyle ??
                     FilledButton.styleFrom(
                       shape: const CircleBorder(),
@@ -212,7 +214,8 @@ class _FullWidthProviderButton extends StatelessWidget {
     if (provider.button != null) return provider.button!;
 
     final loginTheme = AnimatedLoginTheme.of(context);
-    final icon = provider.iconWidget ??
+    final icon =
+        provider.iconWidget ??
         Icon(provider.icon, color: provider.foregroundColor);
 
     return Semantics(
@@ -223,7 +226,8 @@ class _FullWidthProviderButton extends StatelessWidget {
           child: AutoLoadingButton(
             transitionDuration: provider.transitionDuration,
             onPressed: onPressed,
-            style: provider.style ??
+            style:
+                provider.style ??
                 loginTheme.providerButtonStyle ??
                 FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(48),

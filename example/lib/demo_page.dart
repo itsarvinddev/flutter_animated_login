@@ -149,22 +149,24 @@ class DemoResultPanel extends StatelessWidget {
                   ),
                   ConstrainedBox(
                     constraints: const BoxConstraints(maxHeight: 132),
-                    child: events.isEmpty
-                        ? Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Text(
-                              'Submit the form — what the fake backend '
-                              'received shows up here.',
-                              style: theme.textTheme.bodySmall,
+                    child:
+                        events.isEmpty
+                            ? Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Text(
+                                'Submit the form — what the fake backend '
+                                'received shows up here.',
+                                style: theme.textTheme.bodySmall,
+                              ),
+                            )
+                            : ListView.builder(
+                              shrinkWrap: true,
+                              padding: const EdgeInsets.only(bottom: 8),
+                              itemCount: events.length,
+                              itemBuilder:
+                                  (context, index) =>
+                                      _EventTile(event: events[index]),
                             ),
-                          )
-                        : ListView.builder(
-                            shrinkWrap: true,
-                            padding: const EdgeInsets.only(bottom: 8),
-                            itemCount: events.length,
-                            itemBuilder: (context, index) =>
-                                _EventTile(event: events[index]),
-                          ),
                   ),
                 ],
               ),

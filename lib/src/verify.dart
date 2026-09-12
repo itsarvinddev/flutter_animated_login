@@ -213,131 +213,144 @@ class _FlutterAnimatedVerifyState extends State<FlutterAnimatedVerify> {
 
     return PageWidget(
       config: widget.pageConfig,
-      builder: (context, constraints) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          config.header ??
-              config.titleWidget ??
-              TitleWidget(
-                title: config.title ??
-                    (isEmail
-                        ? messages.otpSentToEmail
-                        : messages.otpSentToPhone),
-                titleStyle: textTheme.titleLarge,
-                subtitle: config.subtitle ?? _name,
-                subtitleStyle: textTheme.titleMedium,
-                titleGap: const SizedBox(height: 6),
-                actionLabel: messages.edit,
-                onTap: () => controller.goTo(LoginStep.login),
-                child: config.logo,
+      builder:
+          (context, constraints) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              config.header ??
+                  config.titleWidget ??
+                  TitleWidget(
+                    title:
+                        config.title ??
+                        (isEmail
+                            ? messages.otpSentToEmail
+                            : messages.otpSentToPhone),
+                    titleStyle: textTheme.titleLarge,
+                    subtitle: config.subtitle ?? _name,
+                    subtitleStyle: textTheme.titleMedium,
+                    titleGap: const SizedBox(height: 6),
+                    actionLabel: messages.edit,
+                    onTap: () => controller.goTo(LoginStep.login),
+                    child: config.logo,
+                  ),
+              Semantics(
+                textField: true,
+                label: textConfig.semanticLabel ?? messages.otpFieldLabel,
+                child: Pinput(
+                  length: _length,
+                  controller: controller.otpController,
+                  pinAnimationType: textConfig.pinAnimationType,
+                  smsRetriever: textConfig.smsRetriever,
+                  autofillHints:
+                      textConfig.autofillHints ??
+                      const <String>[AutofillHints.oneTimeCode],
+                  focusedPinTheme:
+                      loginTheme.focusedPinTheme ??
+                      textConfig.focusedPinTheme ??
+                      defaultPinTheme.copyWith(
+                        decoration: defaultPinTheme.decoration?.copyWith(
+                          border: Border.all(color: theme.colorScheme.primary),
+                        ),
+                      ),
+                  submittedPinTheme:
+                      loginTheme.submittedPinTheme ??
+                      textConfig.submittedPinTheme,
+                  errorPinTheme:
+                      loginTheme.errorPinTheme ??
+                      textConfig.errorPinTheme ??
+                      defaultPinTheme.copyWith(
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.errorContainer,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: theme.colorScheme.error),
+                        ),
+                      ),
+                  defaultPinTheme:
+                      textConfig.defaultPinTheme ?? defaultPinTheme,
+                  onCompleted: config.autoSubmitOnFill ? _onCompleted : null,
+                  onChanged:
+                      (value) => textConfig.onChanged?.call(
+                        LoginData(name: _name, secret: value),
+                      ),
+                  onSubmitted: (value) {
+                    textConfig.onSubmitted?.call(
+                      LoginData(name: _name, secret: value),
+                    );
+                    _onCompleted(value);
+                  },
+                  onAppPrivateCommand: textConfig.onAppPrivateCommand,
+                  onClipboardFound: textConfig.onClipboardFound,
+                  onLongPress: textConfig.onLongPress,
+                  onTap: textConfig.onTap,
+                  onTapOutside: textConfig.onTapOutside,
+                  onTapUpOutside: textConfig.onTapUpOutside,
+                  animationCurve: textConfig.animationCurve,
+                  animationDuration:
+                      textConfig.animationDuration ?? kThemeAnimationDuration,
+                  autofocus: textConfig.autofocus,
+                  closeKeyboardWhenCompleted:
+                      textConfig.closeKeyboardWhenCompleted,
+                  contextMenuBuilder: textConfig.contextMenuBuilder,
+                  crossAxisAlignment: textConfig.crossAxisAlignment,
+                  cursor: textConfig.cursor,
+                  disabledPinTheme: textConfig.disabledPinTheme,
+                  enableIMEPersonalizedLearning:
+                      textConfig.enableIMEPersonalizedLearning,
+                  enableInteractiveSelection:
+                      textConfig.enableInteractiveSelection,
+                  enableSuggestions: textConfig.enableSuggestions,
+                  enabled: textConfig.enabled,
+                  errorBuilder: textConfig.errorBuilder,
+                  errorText: textConfig.errorText,
+                  errorTextStyle: textConfig.errorTextStyle,
+                  showErrorWhenFocused: textConfig.showErrorWhenFocused,
+                  keyboardType: textConfig.keyboardType,
+                  focusNode: textConfig.focusNode,
+                  followingPinTheme: textConfig.followingPinTheme,
+                  forceErrorState: textConfig.forceErrorState,
+                  hapticFeedbackType: textConfig.hapticFeedbackType,
+                  inputFormatters: textConfig.inputFormatters,
+                  isCursorAnimationEnabled: textConfig.isCursorAnimationEnabled,
+                  keyboardAppearance: textConfig.keyboardAppearance,
+                  mainAxisAlignment: textConfig.mainAxisAlignment,
+                  mouseCursor: textConfig.mouseCursor,
+                  obscureText: textConfig.obscureText,
+                  obscuringCharacter: textConfig.obscuringCharacter,
+                  obscuringWidget: textConfig.obscuringWidget,
+                  pinContentAlignment: textConfig.pinContentAlignment,
+                  pinputAutovalidateMode: textConfig.pinputAutovalidateMode,
+                  preFilledWidget: textConfig.preFilledWidget,
+                  readOnly: textConfig.readOnly,
+                  restorationId: textConfig.restorationId,
+                  scrollPadding: textConfig.scrollPadding,
+                  selectionControls: textConfig.selectionControls,
+                  separatorBuilder: textConfig.separatorBuilder,
+                  showCursor: textConfig.showCursor,
+                  slideTransitionBeginOffset:
+                      textConfig.slideTransitionBeginOffset,
+                  textCapitalization: textConfig.textCapitalization,
+                  textInputAction: textConfig.textInputAction,
+                  toolbarEnabled: textConfig.toolbarEnabled,
+                  useNativeKeyboard: textConfig.useNativeKeyboard,
+                  validator: textConfig.validator,
+                ),
               ),
-          Semantics(
-            textField: true,
-            label: textConfig.semanticLabel ?? messages.otpFieldLabel,
-            child: Pinput(
-              length: _length,
-              controller: controller.otpController,
-              pinAnimationType: textConfig.pinAnimationType,
-              smsRetriever: textConfig.smsRetriever,
-              autofillHints: textConfig.autofillHints ??
-                  const <String>[AutofillHints.oneTimeCode],
-              focusedPinTheme: loginTheme.focusedPinTheme ??
-                  textConfig.focusedPinTheme ??
-                  defaultPinTheme.copyWith(
-                    decoration: defaultPinTheme.decoration?.copyWith(
-                      border: Border.all(color: theme.colorScheme.primary),
-                    ),
-                  ),
-              submittedPinTheme:
-                  loginTheme.submittedPinTheme ?? textConfig.submittedPinTheme,
-              errorPinTheme: loginTheme.errorPinTheme ??
-                  textConfig.errorPinTheme ??
-                  defaultPinTheme.copyWith(
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.errorContainer,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: theme.colorScheme.error),
-                    ),
-                  ),
-              defaultPinTheme: textConfig.defaultPinTheme ?? defaultPinTheme,
-              onCompleted: config.autoSubmitOnFill ? _onCompleted : null,
-              onChanged: (value) => textConfig.onChanged
-                  ?.call(LoginData(name: _name, secret: value)),
-              onSubmitted: (value) {
-                textConfig.onSubmitted
-                    ?.call(LoginData(name: _name, secret: value));
-                _onCompleted(value);
-              },
-              onAppPrivateCommand: textConfig.onAppPrivateCommand,
-              onClipboardFound: textConfig.onClipboardFound,
-              onLongPress: textConfig.onLongPress,
-              onTap: textConfig.onTap,
-              onTapOutside: textConfig.onTapOutside,
-              onTapUpOutside: textConfig.onTapUpOutside,
-              animationCurve: textConfig.animationCurve,
-              animationDuration:
-                  textConfig.animationDuration ?? kThemeAnimationDuration,
-              autofocus: textConfig.autofocus,
-              closeKeyboardWhenCompleted: textConfig.closeKeyboardWhenCompleted,
-              contextMenuBuilder: textConfig.contextMenuBuilder,
-              crossAxisAlignment: textConfig.crossAxisAlignment,
-              cursor: textConfig.cursor,
-              disabledPinTheme: textConfig.disabledPinTheme,
-              enableIMEPersonalizedLearning:
-                  textConfig.enableIMEPersonalizedLearning,
-              enableInteractiveSelection: textConfig.enableInteractiveSelection,
-              enableSuggestions: textConfig.enableSuggestions,
-              enabled: textConfig.enabled,
-              errorBuilder: textConfig.errorBuilder,
-              errorText: textConfig.errorText,
-              errorTextStyle: textConfig.errorTextStyle,
-              showErrorWhenFocused: textConfig.showErrorWhenFocused,
-              keyboardType: textConfig.keyboardType,
-              focusNode: textConfig.focusNode,
-              followingPinTheme: textConfig.followingPinTheme,
-              forceErrorState: textConfig.forceErrorState,
-              hapticFeedbackType: textConfig.hapticFeedbackType,
-              inputFormatters: textConfig.inputFormatters,
-              isCursorAnimationEnabled: textConfig.isCursorAnimationEnabled,
-              keyboardAppearance: textConfig.keyboardAppearance,
-              mainAxisAlignment: textConfig.mainAxisAlignment,
-              mouseCursor: textConfig.mouseCursor,
-              obscureText: textConfig.obscureText,
-              obscuringCharacter: textConfig.obscuringCharacter,
-              obscuringWidget: textConfig.obscuringWidget,
-              pinContentAlignment: textConfig.pinContentAlignment,
-              pinputAutovalidateMode: textConfig.pinputAutovalidateMode,
-              preFilledWidget: textConfig.preFilledWidget,
-              readOnly: textConfig.readOnly,
-              restorationId: textConfig.restorationId,
-              scrollPadding: textConfig.scrollPadding,
-              selectionControls: textConfig.selectionControls,
-              separatorBuilder: textConfig.separatorBuilder,
-              showCursor: textConfig.showCursor,
-              slideTransitionBeginOffset: textConfig.slideTransitionBeginOffset,
-              textCapitalization: textConfig.textCapitalization,
-              textInputAction: textConfig.textInputAction,
-              toolbarEnabled: textConfig.toolbarEnabled,
-              useNativeKeyboard: textConfig.useNativeKeyboard,
-              validator: textConfig.validator,
-            ),
+              const SizedBox(height: 20),
+              _buildResend(context, textTheme),
+              if (config.showProviders)
+                OAuthWidget(
+                  providers: widget.providers,
+                  termsAndConditions: widget.termsAndConditions,
+                  footerWidget: config.footer ?? widget.footerWidget,
+                  messages: messages,
+                  controller: controller,
+                  layout: widget.providerLayout,
+                  spacing: widget.providerSpacing,
+                )
+              else
+                (config.footer ?? widget.footerWidget).orShrink,
+            ],
           ),
-          const SizedBox(height: 20),
-          _buildResend(context, textTheme),
-          if (config.showProviders)
-            OAuthWidget(
-              providers: widget.providers,
-              termsAndConditions: widget.termsAndConditions,
-              footerWidget: config.footer ?? widget.footerWidget,
-              messages: messages,
-              controller: controller,
-              layout: widget.providerLayout,
-              spacing: widget.providerSpacing,
-            )
-          else
-            (config.footer ?? widget.footerWidget).orShrink,
-        ],
-      ),
     );
   }
 

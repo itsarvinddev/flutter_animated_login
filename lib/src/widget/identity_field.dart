@@ -48,10 +48,10 @@ class IdentityField extends StatelessWidget {
   final TextInputAction? textInputAction;
 
   bool get _isPhone => switch (loginFieldInputType) {
-        LoginFieldInputType.phone => true,
-        LoginFieldInputType.email => false,
-        LoginFieldInputType.phoneOrEmail => controller.isPhone,
-      };
+    LoginFieldInputType.phone => true,
+    LoginFieldInputType.email => false,
+    LoginFieldInputType.phoneOrEmail => controller.isPhone,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -63,20 +63,22 @@ class IdentityField extends StatelessWidget {
     if (supplied != null) return supplied;
     if (config.decoration != null) return config.decoration!;
 
-    final radius = AnimatedLoginTheme.of(context).fieldRadius ??
+    final radius =
+        AnimatedLoginTheme.of(context).fieldRadius ??
         const BorderRadius.all(Radius.circular(16));
     final (hint, label) = switch (loginFieldInputType) {
       LoginFieldInputType.phone => (
-          formMessages.loginFieldEnterPhone,
-          formMessages.phone,
-        ),
+        formMessages.loginFieldEnterPhone,
+        formMessages.phone,
+      ),
       LoginFieldInputType.email => (
-          formMessages.loginFieldEnterEmail,
-          formMessages.email,
-        ),
-      LoginFieldInputType.phoneOrEmail => isPhone
-          ? (formMessages.loginFieldEnterPhone, formMessages.phone)
-          : (
+        formMessages.loginFieldEnterEmail,
+        formMessages.email,
+      ),
+      LoginFieldInputType.phoneOrEmail =>
+        isPhone
+            ? (formMessages.loginFieldEnterPhone, formMessages.phone)
+            : (
               formMessages.loginFieldEnterEmailOrPhone,
               formMessages.emailOrPhone,
             ),
@@ -130,7 +132,8 @@ class IdentityField extends StatelessWidget {
       textCapitalization: TextCapitalization.none,
       autocorrect: false,
       enableSuggestions: false,
-      autofillHints: config.autofillHints ??
+      autofillHints:
+          config.autofillHints ??
           const <String>[AutofillHints.email, AutofillHints.username],
       onTap: config.onTap,
       onTapOutside: config.onTapOutside,
@@ -244,7 +247,8 @@ class IdentityField extends StatelessWidget {
           textInputAction ?? config.textInputAction ?? TextInputAction.next,
       // telephoneNumber first, so iOS QuickType offers the number rather than
       // an email address in a field that only takes digits.
-      autofillHints: config.autofillHints ??
+      autofillHints:
+          config.autofillHints ??
           const <String>[
             AutofillHints.telephoneNumberNational,
             AutofillHints.telephoneNumber,

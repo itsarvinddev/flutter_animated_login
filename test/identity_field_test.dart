@@ -3,12 +3,14 @@ import 'package:flutter_animated_login/flutter_animated_login.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Key of the email branch of the identity field.
-const Key _emailFieldKey =
-    ValueKey<String>('flutter_animated_login.identity.email');
+const Key _emailFieldKey = ValueKey<String>(
+  'flutter_animated_login.identity.email',
+);
 
 /// Key of the phone branch of the identity field.
-const Key _phoneFieldKey =
-    ValueKey<String>('flutter_animated_login.identity.phone');
+const Key _phoneFieldKey = ValueKey<String>(
+  'flutter_animated_login.identity.phone',
+);
 
 /// Pumps [login] inside a [MaterialApp] on a surface tall enough for the whole
 /// form to be laid out and tappable.
@@ -22,9 +24,9 @@ Future<void> _pump(WidgetTester tester, Widget login) async {
 
 /// The Material button whose label is [label], whatever its variant.
 Finder _buttonWithText(String label) => find.ancestor(
-      of: find.text(label),
-      matching: find.byWidgetPredicate((widget) => widget is ButtonStyleButton),
-    );
+  of: find.text(label),
+  matching: find.byWidgetPredicate((widget) => widget is ButtonStyleButton),
+);
 
 /// Whether the button labelled [label] accepts taps.
 bool _enabled(WidgetTester tester, String label) {
@@ -35,8 +37,9 @@ bool _enabled(WidgetTester tester, String label) {
 
 void main() {
   group('identity field', () {
-    testWidgets('email input type renders the email field only',
-        (tester) async {
+    testWidgets('email input type renders the email field only', (
+      tester,
+    ) async {
       await _pump(
         tester,
         const FlutterAnimatedLogin(
@@ -51,8 +54,9 @@ void main() {
       expect(find.text('Enter your email'), findsOneWidget);
     });
 
-    testWidgets('phone input type renders the phone field only',
-        (tester) async {
+    testWidgets('phone input type renders the phone field only', (
+      tester,
+    ) async {
       await _pump(
         tester,
         FlutterAnimatedLogin(
@@ -72,8 +76,9 @@ void main() {
       expect(_enabled(tester, 'Continue'), isTrue);
     });
 
-    testWidgets('phoneOrEmail starts on email and follows what is typed',
-        (tester) async {
+    testWidgets('phoneOrEmail starts on email and follows what is typed', (
+      tester,
+    ) async {
       final controller = FlutterAnimatedLoginController();
       addTearDown(controller.dispose);
 
@@ -103,37 +108,40 @@ void main() {
     // The critical one. flutter_intl_phone_field 0.1.x reduces its value to
     // digits, so routing an email through the phone field produced the empty
     // string: the button never enabled and email sign-in was dead.
-    testWidgets('a valid email in phoneOrEmail enables the button and submits',
-        (tester) async {
-      String? received;
+    testWidgets(
+      'a valid email in phoneOrEmail enables the button and submits',
+      (tester) async {
+        String? received;
 
-      await _pump(
-        tester,
-        FlutterAnimatedLogin(
-          verifyConfig: const VerifyConfig(startCooldownOnOpen: false),
-          onLogin: (data) async {
-            received = data.name;
-            return null;
-          },
-        ),
-      );
+        await _pump(
+          tester,
+          FlutterAnimatedLogin(
+            verifyConfig: const VerifyConfig(startCooldownOnOpen: false),
+            onLogin: (data) async {
+              received = data.name;
+              return null;
+            },
+          ),
+        );
 
-      expect(_enabled(tester, 'Continue'), isFalse);
+        expect(_enabled(tester, 'Continue'), isFalse);
 
-      await tester.enterText(find.byKey(_emailFieldKey), 'user@example.com');
-      await tester.pumpAndSettle();
+        await tester.enterText(find.byKey(_emailFieldKey), 'user@example.com');
+        await tester.pumpAndSettle();
 
-      expect(find.byKey(_emailFieldKey), findsOneWidget);
-      expect(_enabled(tester, 'Continue'), isTrue);
+        expect(find.byKey(_emailFieldKey), findsOneWidget);
+        expect(_enabled(tester, 'Continue'), isTrue);
 
-      await tester.tap(_buttonWithText('Continue'));
-      await tester.pumpAndSettle();
+        await tester.tap(_buttonWithText('Continue'));
+        await tester.pumpAndSettle();
 
-      expect(received, 'user@example.com');
-    });
+        expect(received, 'user@example.com');
+      },
+    );
 
-    testWidgets('the email validator rejects junk and accepts a real address',
-        (tester) async {
+    testWidgets('the email validator rejects junk and accepts a real address', (
+      tester,
+    ) async {
       await _pump(
         tester,
         const FlutterAnimatedLogin(

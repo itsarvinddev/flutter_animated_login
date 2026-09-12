@@ -6,9 +6,9 @@ publish_to: "none"
 version: 1.0.0+1
 
 environment:
-  # Matches the package: FlutterAnimatedLogin needs Dart 3.6 / Flutter 3.27.
-  sdk: ">=3.6.0 <4.0.0"
-  flutter: ">=3.27.0"
+  # Matches the package: FlutterAnimatedLogin needs Dart 3.7 / Flutter 3.29.
+  sdk: ">=3.7.0 <4.0.0"
+  flutter: ">=3.29.0"
 
 dependencies:
   flutter:
@@ -21,7 +21,7 @@ dev_dependencies:
     sdk: flutter
   # Same lint set as the package itself.
   # A range, not a caret, for the same reason as the package's own pubspec:
-  # flutter_lints 6.x needs Dart 3.8, above the Flutter 3.27 floor this
+  # flutter_lints 6.x needs Dart 3.8, above the Flutter 3.29 floor this
   # example shares with the package, and CI exercises that floor.
   flutter_lints: ">=5.0.0 <7.0.0"
 

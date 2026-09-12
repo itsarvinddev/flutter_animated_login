@@ -172,9 +172,13 @@ void main() {
       expect(scores.first, 0);
       expect(scores.last, 1);
       for (var i = 1; i < scores.length; i++) {
-        expect(scores[i], greaterThan(scores[i - 1]),
-            reason: '${PasswordStrength.values[i]} must outrank '
-                '${PasswordStrength.values[i - 1]}');
+        expect(
+          scores[i],
+          greaterThan(scores[i - 1]),
+          reason:
+              '${PasswordStrength.values[i]} must outrank '
+              '${PasswordStrength.values[i - 1]}',
+        );
       }
     });
 

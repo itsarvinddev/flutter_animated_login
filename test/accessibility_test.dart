@@ -7,22 +7,22 @@ const FormMessages messages = FormMessages();
 
 /// Three providers, the count that used to overflow the old fixed row.
 List<LoginProvider> providers() => <LoginProvider>[
-      LoginProvider(
-        icon: Icons.abc,
-        semanticLabel: 'Sign in with Google',
-        callback: () async => null,
-      ),
-      LoginProvider(
-        icon: Icons.apple,
-        semanticLabel: 'Sign in with Apple',
-        callback: () async => null,
-      ),
-      LoginProvider(
-        icon: Icons.facebook,
-        semanticLabel: 'Sign in with Facebook',
-        callback: () async => null,
-      ),
-    ];
+  LoginProvider(
+    icon: Icons.abc,
+    semanticLabel: 'Sign in with Google',
+    callback: () async => null,
+  ),
+  LoginProvider(
+    icon: Icons.apple,
+    semanticLabel: 'Sign in with Apple',
+    callback: () async => null,
+  ),
+  LoginProvider(
+    icon: Icons.facebook,
+    semanticLabel: 'Sign in with Facebook',
+    callback: () async => null,
+  ),
+];
 
 /// A controller holding a valid identifier, so the primary button is enabled
 /// rather than greyed out — a disabled button is exempt from contrast rules
@@ -64,25 +64,29 @@ Widget harness({
 
   return MaterialApp(
     home: Builder(
-      builder: (context) => textScaler == null
-          ? login
-          : MediaQuery(
-              data: MediaQuery.of(context).copyWith(textScaler: textScaler),
-              child: login,
-            ),
+      builder:
+          (context) =>
+              textScaler == null
+                  ? login
+                  : MediaQuery(
+                    data: MediaQuery.of(
+                      context,
+                    ).copyWith(textScaler: textScaler),
+                    child: login,
+                  ),
     ),
   );
 }
 
 void main() {
-  testWidgets('the login screen meets the Material accessibility guidelines',
-      (tester) async {
+  testWidgets('the login screen meets the Material accessibility guidelines', (
+    tester,
+  ) async {
     final handle = tester.ensureSemantics();
 
-    await tester.pumpWidget(harness(
-      controller: filledController(),
-      loginProviders: providers(),
-    ));
+    await tester.pumpWidget(
+      harness(controller: filledController(), loginProviders: providers()),
+    );
     await tester.pumpAndSettle();
 
     await expectLater(tester, meetsGuideline(textContrastGuideline));
@@ -93,14 +97,17 @@ void main() {
     handle.dispose();
   });
 
-  testWidgets('the signup screen meets the Material accessibility guidelines',
-      (tester) async {
+  testWidgets('the signup screen meets the Material accessibility guidelines', (
+    tester,
+  ) async {
     final handle = tester.ensureSemantics();
 
-    await tester.pumpWidget(harness(
-      controller: filledController(step: LoginStep.signup),
-      loginProviders: providers(),
-    ));
+    await tester.pumpWidget(
+      harness(
+        controller: filledController(step: LoginStep.signup),
+        loginProviders: providers(),
+      ),
+    );
     await tester.pumpAndSettle();
 
     await expectLater(tester, meetsGuideline(textContrastGuideline));
@@ -111,14 +118,14 @@ void main() {
     handle.dispose();
   });
 
-  testWidgets('a social provider button announces its semanticLabel',
-      (tester) async {
+  testWidgets('a social provider button announces its semanticLabel', (
+    tester,
+  ) async {
     final handle = tester.ensureSemantics();
 
-    await tester.pumpWidget(harness(
-      controller: filledController(),
-      loginProviders: providers(),
-    ));
+    await tester.pumpWidget(
+      harness(controller: filledController(), loginProviders: providers()),
+    );
     await tester.pumpAndSettle();
 
     expect(find.bySemanticsLabel('Sign in with Google'), findsOneWidget);
@@ -131,10 +138,9 @@ void main() {
   testWidgets('the password reveal toggle carries a tooltip', (tester) async {
     final handle = tester.ensureSemantics();
 
-    await tester.pumpWidget(harness(
-      controller: filledController(),
-      loginType: LoginType.password,
-    ));
+    await tester.pumpWidget(
+      harness(controller: filledController(), loginType: LoginType.password),
+    );
     await tester.pumpAndSettle();
 
     expect(find.byTooltip(messages.showPassword), findsOneWidget);
@@ -148,8 +154,9 @@ void main() {
     handle.dispose();
   });
 
-  testWidgets('the one-time-code field carries FormMessages.otpFieldLabel',
-      (tester) async {
+  testWidgets('the one-time-code field carries FormMessages.otpFieldLabel', (
+    tester,
+  ) async {
     final handle = tester.ensureSemantics();
     final controller = filledController();
 
@@ -164,17 +171,20 @@ void main() {
     handle.dispose();
   });
 
-  testWidgets('nothing overflows at textScaler 2.0 on a 400x800 window',
-      (tester) async {
+  testWidgets('nothing overflows at textScaler 2.0 on a 400x800 window', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(400, 800);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
-    await tester.pumpWidget(harness(
-      controller: filledController(),
-      loginProviders: providers(),
-      textScaler: const TextScaler.linear(2),
-    ));
+    await tester.pumpWidget(
+      harness(
+        controller: filledController(),
+        loginProviders: providers(),
+        textScaler: const TextScaler.linear(2),
+      ),
+    );
     await tester.pumpAndSettle();
 
     // The provider row and the Sign Up / Forgot row both overflowed here
@@ -183,28 +193,33 @@ void main() {
     expect(find.byType(Wrap), findsWidgets);
   });
 
-  testWidgets('the signup screen does not overflow at textScaler 2.0',
-      (tester) async {
+  testWidgets('the signup screen does not overflow at textScaler 2.0', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(400, 800);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
-    await tester.pumpWidget(harness(
-      controller: filledController(step: LoginStep.signup),
-      loginProviders: providers(),
-      textScaler: const TextScaler.linear(2),
-    ));
+    await tester.pumpWidget(
+      harness(
+        controller: filledController(step: LoginStep.signup),
+        loginProviders: providers(),
+        textScaler: const TextScaler.linear(2),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
   });
 
   testWidgets('the login screen renders right-to-left', (tester) async {
-    await tester.pumpWidget(harness(
-      controller: filledController(),
-      loginProviders: providers(),
-      textDirection: TextDirection.rtl,
-    ));
+    await tester.pumpWidget(
+      harness(
+        controller: filledController(),
+        loginProviders: providers(),
+        textDirection: TextDirection.rtl,
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
@@ -215,11 +230,13 @@ void main() {
   });
 
   testWidgets('the signup screen renders right-to-left', (tester) async {
-    await tester.pumpWidget(harness(
-      controller: filledController(step: LoginStep.signup),
-      loginProviders: providers(),
-      textDirection: TextDirection.rtl,
-    ));
+    await tester.pumpWidget(
+      harness(
+        controller: filledController(step: LoginStep.signup),
+        loginProviders: providers(),
+        textDirection: TextDirection.rtl,
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);

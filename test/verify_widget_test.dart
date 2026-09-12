@@ -7,9 +7,9 @@ const String _sentTo = '+919876543210';
 
 /// The Material button whose label is [label], whatever its variant.
 Finder _buttonWithText(String label) => find.ancestor(
-      of: find.text(label),
-      matching: find.byWidgetPredicate((widget) => widget is ButtonStyleButton),
-    );
+  of: find.text(label),
+  matching: find.byWidgetPredicate((widget) => widget is ButtonStyleButton),
+);
 
 /// Mounts the flow, drives it to the verify screen and settles the page
 /// transition without burning any more of the cooldown than it has to.
@@ -85,8 +85,9 @@ void main() {
       );
     });
 
-    testWidgets('startCooldownOnOpen false offers the button at once',
-        (tester) async {
+    testWidgets('startCooldownOnOpen false offers the button at once', (
+      tester,
+    ) async {
       await _pumpVerify(
         tester,
         config: const VerifyConfig(startCooldownOnOpen: false),
@@ -102,8 +103,9 @@ void main() {
       );
     });
 
-    testWidgets('the resend limit replaces the button with a message',
-        (tester) async {
+    testWidgets('the resend limit replaces the button with a message', (
+      tester,
+    ) async {
       var sent = 0;
       final controller = await _pumpVerify(
         tester,
@@ -156,8 +158,9 @@ void main() {
       expect(controller.step, LoginStep.login);
     });
 
-    testWidgets('a rejected code stays put and clears the field',
-        (tester) async {
+    testWidgets('a rejected code stays put and clears the field', (
+      tester,
+    ) async {
       String? result = 'ZZ wrong code';
       final controller = await _pumpVerify(
         tester,

@@ -49,10 +49,7 @@ class _FlutterAnimatedResetState extends State<FlutterAnimatedReset> {
 
   Future<String?> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
-      context.error(
-        messages.errorTitle,
-        description: messages.invalidFormData,
-      );
+      context.error(messages.errorTitle, description: messages.invalidFormData);
       return null;
     }
     _formKey.currentState?.save();
@@ -88,7 +85,8 @@ class _FlutterAnimatedResetState extends State<FlutterAnimatedReset> {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final config = widget.config;
-    final gap = widget.loginConfig.fieldGap ??
+    final gap =
+        widget.loginConfig.fieldGap ??
         AnimatedLoginTheme.of(context).fieldGap ??
         18;
 
@@ -100,54 +98,56 @@ class _FlutterAnimatedResetState extends State<FlutterAnimatedReset> {
 
     return PageWidget(
       config: widget.pageConfig,
-      builder: (context, constraints) => Form(
-        key: _formKey,
-        child: AutofillGroup(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              config.header ??
-                  config.titleWidget ??
-                  TitleWidget(
-                    title: config.title ?? messages.resetTitle,
-                    titleStyle: textTheme.titleLarge,
-                    subtitle: config.subtitle ?? messages.resetSubtitle,
-                    subtitleStyle: textTheme.titleMedium,
-                    titleGap: const SizedBox(height: 6),
-                    child: config.logo,
+      builder:
+          (context, constraints) => Form(
+            key: _formKey,
+            child: AutofillGroup(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  config.header ??
+                      config.titleWidget ??
+                      TitleWidget(
+                        title: config.title ?? messages.resetTitle,
+                        titleStyle: textTheme.titleLarge,
+                        subtitle: config.subtitle ?? messages.resetSubtitle,
+                        subtitleStyle: textTheme.titleMedium,
+                        titleGap: const SizedBox(height: 6),
+                        child: config.logo,
+                      ),
+                  IdentityField(
+                    config: identityConfig,
+                    controller: controller,
+                    formMessages: messages,
+                    loginFieldInputType: widget.loginConfig.loginFieldInputType,
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) => _submit(),
                   ),
-              IdentityField(
-                config: identityConfig,
-                controller: controller,
-                formMessages: messages,
-                loginFieldInputType: widget.loginConfig.loginFieldInputType,
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => _submit(),
-              ),
-              SizedBox(height: gap),
-              SignInButton(
-                onPressed: _submit,
-                config: widget.loginConfig,
-                loginType: widget.loginType,
-                controller: controller,
-                label: config.buttonText ?? Text(messages.resetButton),
-              ),
-              const SizedBox(height: 8),
-              ActionButtonBox(
-                child: TextButton(
-                  onPressed: () => controller.goTo(LoginStep.login),
-                  style: TextButton.styleFrom(
-                    textStyle: config.buttonTextStyle ?? textTheme.titleMedium,
-                    minimumSize: const Size.fromHeight(48),
+                  SizedBox(height: gap),
+                  SignInButton(
+                    onPressed: _submit,
+                    config: widget.loginConfig,
+                    loginType: widget.loginType,
+                    controller: controller,
+                    label: config.buttonText ?? Text(messages.resetButton),
                   ),
-                  child: Text(messages.signIn),
-                ),
+                  const SizedBox(height: 8),
+                  ActionButtonBox(
+                    child: TextButton(
+                      onPressed: () => controller.goTo(LoginStep.login),
+                      style: TextButton.styleFrom(
+                        textStyle:
+                            config.buttonTextStyle ?? textTheme.titleMedium,
+                        minimumSize: const Size.fromHeight(48),
+                      ),
+                      child: Text(messages.signIn),
+                    ),
+                  ),
+                  config.footer.orShrink,
+                ],
               ),
-              config.footer.orShrink,
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 }

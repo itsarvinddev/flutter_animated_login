@@ -37,20 +37,21 @@ jobs:
             channel: stable
             flutter-version: ""
             coverage: true
-          # The floor that pubspec.yaml declares (`flutter: ">=3.27.0"`,
-          # `sdk: ">=3.6.0"`; Flutter 3.27.0 ships Dart 3.6.0). Pinning it is
-          # the only thing that keeps the declared floor honest: without this
-          # leg a dependency can quietly raise the real minimum while the
-          # pubspec keeps advertising the old one.
+          # The floor that pubspec.yaml declares (`flutter: ">=3.29.0"`,
+          # `sdk: ">=3.7.0"`). Pinning it is the only thing that keeps the
+          # declared floor honest, and it has already earned its place: the
+          # first run of this leg caught three symbols the modern SDK hides --
+          # stylusHandwritingEnabled, TapRegionUpCallback and `internal` via
+          # flutter/foundation -- none of which existed at the 3.27 the pubspec
+          # then advertised.
           #
-          # Previously red here: `flutter_lints: ^6.0.0` needs Dart 3.8,
-          # above the declared floor, so `pub get` failed on this leg. The
-          # constraint is now `>=5.0.0 <7.0.0`, which resolves to 5.x on 3.6
-          # and 6.x on the newest stable. Consumers never resolve
+          # flutter_lints stays a range rather than `^6.0.0`: 6.x needs Dart
+          # 3.8 (Flutter 3.32), above this floor. It resolves to 5.x here and
+          # 6.x on the newest stable. Consumers never resolve
           # dev_dependencies, but the leg has to be installable to be useful.
-          - label: 3.27.0 (declared floor)
+          - label: 3.29.0 (declared floor)
             channel: stable
-            flutter-version: 3.27.0
+            flutter-version: 3.29.0
             coverage: false
 
     steps:

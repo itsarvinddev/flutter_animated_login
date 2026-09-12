@@ -37,8 +37,9 @@ class _PasswordTextFieldState extends State<PasswordTextField> {
   // build(), so the reveal toggle snapped back to hidden on every rebuild —
   // a window resize, a rotation, or the Android keyboard opening — and leaked
   // a notifier each time.
-  late final ValueNotifier<bool> _isObscure =
-      ValueNotifier<bool>(widget.config.obscureText);
+  late final ValueNotifier<bool> _isObscure = ValueNotifier<bool>(
+    widget.config.obscureText,
+  );
   bool _capsLockOn = false;
 
   @override
@@ -73,8 +74,9 @@ class _PasswordTextFieldState extends State<PasswordTextField> {
 
   void _syncCapsLock() {
     if (!widget.config.showCapsLockHint) return;
-    final on = HardwareKeyboard.instance.lockModesEnabled
-        .contains(KeyboardLockMode.capsLock);
+    final on = HardwareKeyboard.instance.lockModesEnabled.contains(
+      KeyboardLockMode.capsLock,
+    );
     if (on != _capsLockOn && mounted) setState(() => _capsLockOn = on);
   }
 
@@ -83,7 +85,8 @@ class _PasswordTextFieldState extends State<PasswordTextField> {
     final config = widget.config;
     final messages = widget.formMessages;
     final theme = Theme.of(context);
-    final radius = AnimatedLoginTheme.of(context).fieldRadius ??
+    final radius =
+        AnimatedLoginTheme.of(context).fieldRadius ??
         const BorderRadius.all(Radius.circular(16));
 
     return ValueListenableBuilder<bool>(
@@ -107,9 +110,10 @@ class _PasswordTextFieldState extends State<PasswordTextField> {
           validator: (value) {
             // The policy runs first so a caller-supplied validator composes
             // with it instead of having to re-implement it.
-            final policyError = config.policy.isEmpty
-                ? (value.isEmptyOrNull ? messages.passwordIsRequired : null)
-                : config.policy.validate(value, messages);
+            final policyError =
+                config.policy.isEmpty
+                    ? (value.isEmptyOrNull ? messages.passwordIsRequired : null)
+                    : config.policy.validate(value, messages);
             if (policyError != null) return policyError;
             return config.validator?.call(value);
           },
@@ -131,15 +135,14 @@ class _PasswordTextFieldState extends State<PasswordTextField> {
           autovalidateMode: config.autovalidateMode,
           scrollController: config.scrollController,
           restorationId: config.restorationId,
-          decoration: config.decoration?.call(_isObscure) ??
+          decoration:
+              config.decoration?.call(_isObscure) ??
               InputDecoration(
                 hintText: messages.enterYourPassword,
                 labelText: messages.password,
                 border: OutlineInputBorder(borderRadius: radius),
                 suffixIcon: IconButton(
-                  icon: Icon(
-                    obscure ? Icons.visibility : Icons.visibility_off,
-                  ),
+                  icon: Icon(obscure ? Icons.visibility : Icons.visibility_off),
                   // Icon-only controls announce nothing useful without these.
                   tooltip:
                       obscure ? messages.showPassword : messages.hidePassword,
@@ -198,17 +201,18 @@ class _PasswordTextFieldState extends State<PasswordTextField> {
               // Caps lock is pure Dart via HardwareKeyboard, so this needs no
               // plugin and works on desktop and web.
               canRequestFocus: false,
-              onKeyEvent: (_, __) {
+              onKeyEvent: (_, _) {
                 _syncCapsLock();
                 return KeyEventResult.ignored;
               },
-              child: config.semanticLabel == null
-                  ? field
-                  : Semantics(
-                      textField: true,
-                      label: config.semanticLabel,
-                      child: field,
-                    ),
+              child:
+                  config.semanticLabel == null
+                      ? field
+                      : Semantics(
+                        textField: true,
+                        label: config.semanticLabel,
+                        child: field,
+                      ),
             ),
             if (config.showCapsLockHint && _capsLockOn)
               Padding(
@@ -242,9 +246,10 @@ class _PasswordTextFieldState extends State<PasswordTextField> {
                   ),
             if (config.showRequirementChecklist && !policy.isEmpty)
               PasswordRequirementList(
-                unmet: text.isEmpty
-                    ? const <String>[]
-                    : policy.violations(text, messages),
+                unmet:
+                    text.isEmpty
+                        ? const <String>[]
+                        : policy.violations(text, messages),
                 satisfiedCount: 0,
               ),
           ],

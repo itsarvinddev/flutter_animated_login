@@ -51,7 +51,7 @@ platform.
 No native code and no plugin dependencies, so there is nothing to configure per
 platform.
 
-**Requires Flutter 3.27 / Dart 3.6 or newer.** On older SDKs, use
+**Requires Flutter 3.29 / Dart 3.7 or newer.** On older SDKs, use
 `flutter_animated_login: 0.0.15`.
 
 ## Screenshots

@@ -12,7 +12,7 @@ things, it keeps compiling and behaving as it did.
 
 | What changed | What to do |
 | --- | --- |
-| Minimum SDK is Dart 3.6 / Flutter 3.27 | Raise your own constraint, or stay on 0.0.15 |
+| Minimum SDK is Dart 3.7 / Flutter 3.29 | Raise your own constraint, or stay on 0.0.15 |
 | `flutter_intl_phone_field` moved 0.0.7 → 0.1.x | Read [its migration guide](https://github.com/itsarvinddev/flutter_intl_phone_field/blob/main/MIGRATION.md); most apps do nothing |
 | `pinput` moved 5.x → 6.x | Nothing, unless you passed `enableInteractiveSelection` |
 | `signals` is no longer a dependency | Depend on it directly if you were using it transitively |
@@ -30,17 +30,23 @@ things, it keeps compiling and behaving as it did.
 
 ```yaml
 environment:
-  sdk: ">=3.6.0 <4.0.0"
-  flutter: ">=3.27.0"
+  sdk: ">=3.7.0 <4.0.0"
+  flutter: ">=3.29.0"
 ```
 
-**Why.** The package already called `Color.withValues`, which arrived in
-Flutter 3.27, while declaring a floor of 3.10 — so the floor it advertised
-could not actually compile. 3.27 is the truthful minimum, and it is what lets
-the package use `stylusHandwritingEnabled` instead of the deprecated
-`scribbleEnabled`.
+**Why.** The old floor of 3.10 could never have compiled — the package already
+called `Color.withValues`, which arrived in 3.27. 3.29 is where everything
+else it needs lands:
 
-If you are pinned below Flutter 3.27, stay on `flutter_animated_login: 0.0.15`.
+- `TextFormField.stylusHandwritingEnabled`. 3.27 deprecated `scribbleEnabled`
+  but did not ship the replacement until 3.29.
+- `TapRegionUpCallback`, which pinput 6 uses. pinput declares `">=3.7.0"`, but
+  it cannot actually compile below 3.29 — so this floor is forced whatever
+  this package does.
+
+A CI leg builds on exactly this floor, so it cannot quietly drift again.
+
+If you are pinned below Flutter 3.29, stay on `flutter_animated_login: 0.0.15`.
 
 ---
 

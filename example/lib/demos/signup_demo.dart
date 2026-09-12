@@ -110,17 +110,18 @@ class _SignupDemoState extends State<SignupDemo> {
             // The Material keeps the tile's ink splash visible: the card
             // behind it is a DecoratedBox, not a Material.
             (context, values) => Material(
-                  type: MaterialType.transparency,
-                  child: CheckboxListTile(
-                    contentPadding: EdgeInsets.zero,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    title: const Text('Send me product news'),
-                    value: values['newsletter'] == 'true',
-                    onChanged: (value) => setState(
+              type: MaterialType.transparency,
+              child: CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                title: const Text('Send me product news'),
+                value: values['newsletter'] == 'true',
+                onChanged:
+                    (value) => setState(
                       () => values['newsletter'] = '${value ?? false}',
                     ),
-                  ),
-                ),
+              ),
+            ),
           ],
         ),
       ),

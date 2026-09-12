@@ -21,9 +21,9 @@ class ActionButtonBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: kMaxActionButtonWidth),
-        child: SizedBox(width: double.infinity, child: child),
-      );
+    constraints: const BoxConstraints(maxWidth: kMaxActionButtonWidth),
+    child: SizedBox(width: double.infinity, child: child),
+  );
 }
 
 /// The primary button on the login, signup and reset screens.
@@ -58,26 +58,31 @@ class SignInButton extends StatelessWidget {
     final theme = Theme.of(context);
     final loginTheme = AnimatedLoginTheme.of(context);
     final messages = config.messages;
-    final usesOtp = loginType == LoginType.otp ||
+    final usesOtp =
+        loginType == LoginType.otp ||
         (loginType == LoginType.otpAndPassword && controller.useOtp);
 
     return ActionButtonBox(
       child: AutoLoadingButton(
         isLoading: controller.isBusy,
-        style: loginTheme.primaryButtonStyle ??
+        style:
+            loginTheme.primaryButtonStyle ??
             FilledButton.styleFrom(
               minimumSize: const Size.fromHeight(48),
-              textStyle: config.buttonTextStyle ??
+              textStyle:
+                  config.buttonTextStyle ??
                   loginTheme.buttonTextStyle ??
                   theme.textTheme.titleMedium,
-              shape: loginTheme.buttonRadius == null
-                  ? null
-                  : RoundedRectangleBorder(
-                      borderRadius: loginTheme.buttonRadius!,
-                    ),
+              shape:
+                  loginTheme.buttonRadius == null
+                      ? null
+                      : RoundedRectangleBorder(
+                        borderRadius: loginTheme.buttonRadius!,
+                      ),
             ),
         onPressed: controller.isFormValid ? onPressed : null,
-        child: label ??
+        child:
+            label ??
             config.buttonText ??
             Text(usesOtp ? messages.continueButton : messages.signIn),
       ),
@@ -120,7 +125,8 @@ class SignUpAndForgetButton extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!showSignup && !showForgot) return const SizedBox.shrink();
     final loginTheme = AnimatedLoginTheme.of(context);
-    final style = loginTheme.secondaryButtonStyle ??
+    final style =
+        loginTheme.secondaryButtonStyle ??
         TextButton.styleFrom(textStyle: textStyle ?? loginTheme.linkStyle);
 
     final links = <Widget>[

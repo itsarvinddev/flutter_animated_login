@@ -19,12 +19,12 @@ class PasswordStrengthMeter extends StatelessWidget {
   final FormMessages messages;
 
   Color _color(ColorScheme scheme) => switch (strength) {
-        PasswordStrength.empty => scheme.surfaceContainerHighest,
-        PasswordStrength.weak => scheme.error,
-        PasswordStrength.fair => scheme.tertiary,
-        PasswordStrength.good => scheme.secondary,
-        PasswordStrength.strong => scheme.primary,
-      };
+    PasswordStrength.empty => scheme.surfaceContainerHighest,
+    PasswordStrength.weak => scheme.error,
+    PasswordStrength.fair => scheme.tertiary,
+    PasswordStrength.good => scheme.secondary,
+    PasswordStrength.strong => scheme.primary,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -45,15 +45,17 @@ class PasswordStrengthMeter extends StatelessWidget {
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeOut,
                 tween: Tween<double>(begin: 0, end: strength.score),
-                builder: (context, value, _) => ClipRRect(
-                  borderRadius: const BorderRadius.all(Radius.circular(4)),
-                  child: LinearProgressIndicator(
-                    value: value,
-                    minHeight: 6,
-                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                    valueColor: AlwaysStoppedAnimation<Color>(color),
-                  ),
-                ),
+                builder:
+                    (context, value, _) => ClipRRect(
+                      borderRadius: const BorderRadius.all(Radius.circular(4)),
+                      child: LinearProgressIndicator(
+                        value: value,
+                        minHeight: 6,
+                        backgroundColor:
+                            theme.colorScheme.surfaceContainerHighest,
+                        valueColor: AlwaysStoppedAnimation<Color>(color),
+                      ),
+                    ),
               ),
             ),
             if (label.isNotEmpty) ...[

@@ -92,10 +92,7 @@ class _FlutterAnimatedSignupState extends State<FlutterAnimatedSignup> {
       return null;
     }
     if (!(_formKey.currentState?.validate() ?? false)) {
-      context.error(
-        messages.errorTitle,
-        description: messages.invalidFormData,
-      );
+      context.error(messages.errorTitle, description: messages.invalidFormData);
       return null;
     }
     _formKey.currentState?.save();
@@ -149,10 +146,12 @@ class _FlutterAnimatedSignupState extends State<FlutterAnimatedSignup> {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final consent = widget.consent;
-    final gap = widget.loginConfig.fieldGap ??
+    final gap =
+        widget.loginConfig.fieldGap ??
         AnimatedLoginTheme.of(context).fieldGap ??
         18;
-    final radius = AnimatedLoginTheme.of(context).fieldRadius ??
+    final radius =
+        AnimatedLoginTheme.of(context).fieldRadius ??
         const BorderRadius.all(Radius.circular(16));
 
     controller.configure(
@@ -172,140 +171,154 @@ class _FlutterAnimatedSignupState extends State<FlutterAnimatedSignup> {
       // Before 1.0.0 the signup screen ignored PageConfig entirely, so the
       // background, card decoration and padding all reverted to defaults.
       config: widget.pageConfig,
-      builder: (context, constraints) => Form(
-        key: _formKey,
-        child: AutofillGroup(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              config.header ??
-                  config.titleWidget ??
-                  TitleWidget(
-                    title: config.title ?? messages.signUp,
-                    titleStyle: textTheme.titleLarge,
-                    subtitle: config.subtitle ?? messages.createAccountLong,
-                    subtitleStyle: textTheme.titleMedium,
-                    titleGap: const SizedBox(height: 6),
-                    child: config.logo,
+      builder:
+          (context, constraints) => Form(
+            key: _formKey,
+            child: AutofillGroup(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  config.header ??
+                      config.titleWidget ??
+                      TitleWidget(
+                        title: config.title ?? messages.signUp,
+                        titleStyle: textTheme.titleLarge,
+                        subtitle: config.subtitle ?? messages.createAccountLong,
+                        subtitleStyle: textTheme.titleMedium,
+                        titleGap: const SizedBox(height: 6),
+                        child: config.logo,
+                      ),
+                  IdentityField(
+                    config: identityConfig,
+                    controller: controller,
+                    formMessages: messages,
+                    loginFieldInputType: widget.loginConfig.loginFieldInputType,
                   ),
-              IdentityField(
-                config: identityConfig,
-                controller: controller,
-                formMessages: messages,
-                loginFieldInputType: widget.loginConfig.loginFieldInputType,
-              ),
-              SizedBox(height: gap),
-              PasswordTextField(
-                config: passwordConfig.copyWith(
-                  autofillHints: const <String>[AutofillHints.newPassword],
-                ),
-                controller: controller.passwordController,
-                formMessages: messages,
-              ),
-              if (config.showConfirmPassword) ...[
-                SizedBox(height: gap),
-                PasswordTextField(
-                  config: passwordConfig.copyWith(
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    autofillHints: const <String>[AutofillHints.newPassword],
-                    // The confirm field checks only that the two agree; the
-                    // policy is already enforced on the field above.
-                    policy: const PasswordPolicy.none(),
-                    showStrengthMeter: false,
-                    showRequirementChecklist: false,
-                    decoration: (isObscure) {
-                      final custom = passwordConfig.decoration?.call(isObscure);
-                      if (custom != null) {
-                        return custom.copyWith(
-                          labelText: messages.confirmPassword,
-                        );
-                      }
-                      return InputDecoration(
-                        hintText: messages.reEnterPassword,
-                        labelText: messages.confirmPassword,
-                        border: OutlineInputBorder(borderRadius: radius),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            isObscure.value
-                                ? Icons.visibility
-                                : Icons.visibility_off,
-                          ),
-                          tooltip: isObscure.value
-                              ? messages.showPassword
-                              : messages.hidePassword,
-                          onPressed: () => isObscure.value = !isObscure.value,
-                        ),
-                      );
-                    },
-                    validator: (value) =>
-                        value != controller.passwordController.text
-                            ? messages.passwordsUnmatched
-                            : null,
-                    textInputAction: config.additionalFields.isEmpty
-                        ? TextInputAction.done
-                        : TextInputAction.next,
+                  SizedBox(height: gap),
+                  PasswordTextField(
+                    config: passwordConfig.copyWith(
+                      autofillHints: const <String>[AutofillHints.newPassword],
+                    ),
+                    controller: controller.passwordController,
+                    formMessages: messages,
                   ),
-                  controller: controller.confirmPasswordController,
-                  formMessages: messages,
-                  onSubmitted:
-                      config.additionalFields.isEmpty ? (_) => _submit() : null,
-                ),
-              ],
-              // GitHub #8: extra fields such as a name or an age.
-              for (final field in config.additionalFields) ...[
-                SizedBox(height: gap),
-                if (field.header != null) field.header!,
-                _AdditionalField(
-                  field: field,
-                  controller: controller.additionalFieldController(field.key),
-                  radius: radius,
-                  isLast: field == config.additionalFields.last,
-                  onSubmitted: (_) => _submit(),
-                ),
-              ],
-              for (final builder in config.customFields) ...[
-                SizedBox(height: gap),
-                builder(context, _customValues),
-              ],
-              if (consent != null && consent.showOnSignup) ...[
-                SizedBox(height: gap / 2),
-                ConsentCheckbox(config: consent, controller: controller),
-              ],
-              SizedBox(height: gap),
-              SignInButton(
-                onPressed: _submit,
-                config: widget.loginConfig,
-                loginType: widget.loginType,
-                controller: controller,
-                label: Text(messages.signUp),
-              ),
-              const SizedBox(height: 8),
-              ActionButtonBox(
-                child: TextButton(
-                  onPressed: () => controller.goTo(LoginStep.login),
-                  style: TextButton.styleFrom(
-                    textStyle: config.buttonTextStyle ?? textTheme.titleMedium,
-                    minimumSize: const Size.fromHeight(48),
+                  if (config.showConfirmPassword) ...[
+                    SizedBox(height: gap),
+                    PasswordTextField(
+                      config: passwordConfig.copyWith(
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
+                        autofillHints: const <String>[
+                          AutofillHints.newPassword,
+                        ],
+                        // The confirm field checks only that the two agree; the
+                        // policy is already enforced on the field above.
+                        policy: const PasswordPolicy.none(),
+                        showStrengthMeter: false,
+                        showRequirementChecklist: false,
+                        decoration: (isObscure) {
+                          final custom = passwordConfig.decoration?.call(
+                            isObscure,
+                          );
+                          if (custom != null) {
+                            return custom.copyWith(
+                              labelText: messages.confirmPassword,
+                            );
+                          }
+                          return InputDecoration(
+                            hintText: messages.reEnterPassword,
+                            labelText: messages.confirmPassword,
+                            border: OutlineInputBorder(borderRadius: radius),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                isObscure.value
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
+                              ),
+                              tooltip:
+                                  isObscure.value
+                                      ? messages.showPassword
+                                      : messages.hidePassword,
+                              onPressed:
+                                  () => isObscure.value = !isObscure.value,
+                            ),
+                          );
+                        },
+                        validator:
+                            (value) =>
+                                value != controller.passwordController.text
+                                    ? messages.passwordsUnmatched
+                                    : null,
+                        textInputAction:
+                            config.additionalFields.isEmpty
+                                ? TextInputAction.done
+                                : TextInputAction.next,
+                      ),
+                      controller: controller.confirmPasswordController,
+                      formMessages: messages,
+                      onSubmitted:
+                          config.additionalFields.isEmpty
+                              ? (_) => _submit()
+                              : null,
+                    ),
+                  ],
+                  // GitHub #8: extra fields such as a name or an age.
+                  for (final field in config.additionalFields) ...[
+                    SizedBox(height: gap),
+                    if (field.header != null) field.header!,
+                    _AdditionalField(
+                      field: field,
+                      controller: controller.additionalFieldController(
+                        field.key,
+                      ),
+                      radius: radius,
+                      isLast: field == config.additionalFields.last,
+                      onSubmitted: (_) => _submit(),
+                    ),
+                  ],
+                  for (final builder in config.customFields) ...[
+                    SizedBox(height: gap),
+                    builder(context, _customValues),
+                  ],
+                  if (consent != null && consent.showOnSignup) ...[
+                    SizedBox(height: gap / 2),
+                    ConsentCheckbox(config: consent, controller: controller),
+                  ],
+                  SizedBox(height: gap),
+                  SignInButton(
+                    onPressed: _submit,
+                    config: widget.loginConfig,
+                    loginType: widget.loginType,
+                    controller: controller,
+                    label: Text(messages.signUp),
                   ),
-                  child: Text(messages.signIn),
-                ),
+                  const SizedBox(height: 8),
+                  ActionButtonBox(
+                    child: TextButton(
+                      onPressed: () => controller.goTo(LoginStep.login),
+                      style: TextButton.styleFrom(
+                        textStyle:
+                            config.buttonTextStyle ?? textTheme.titleMedium,
+                        minimumSize: const Size.fromHeight(48),
+                      ),
+                      child: Text(messages.signIn),
+                    ),
+                  ),
+                  if (config.showProviders)
+                    OAuthWidget(
+                      providers: widget.providers,
+                      termsAndConditions: widget.termsAndConditions,
+                      footerWidget: config.footer,
+                      messages: messages,
+                      controller: controller,
+                      layout: widget.loginConfig.providerLayout,
+                      spacing: widget.loginConfig.providerSpacing,
+                    )
+                  else
+                    config.footer.orShrink,
+                ],
               ),
-              if (config.showProviders)
-                OAuthWidget(
-                  providers: widget.providers,
-                  termsAndConditions: widget.termsAndConditions,
-                  footerWidget: config.footer,
-                  messages: messages,
-                  controller: controller,
-                  layout: widget.loginConfig.providerLayout,
-                  spacing: widget.loginConfig.providerSpacing,
-                )
-              else
-                config.footer.orShrink,
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 }
@@ -342,11 +355,13 @@ class _AdditionalField extends StatelessWidget {
       inputFormatters: field.inputFormatters,
       autofillHints: field.autofillHints,
       autovalidateMode: AutovalidateMode.onUserInteraction,
-      textInputAction: field.textInputAction ??
+      textInputAction:
+          field.textInputAction ??
           (isLast ? TextInputAction.done : TextInputAction.next),
       onFieldSubmitted: isLast ? onSubmitted : null,
       validator: field.validate,
-      decoration: field.decoration ??
+      decoration:
+          field.decoration ??
           InputDecoration(
             labelText: field.label ?? field.key,
             hintText: field.hint,

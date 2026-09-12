@@ -188,7 +188,8 @@ class _FlutterAnimatedLoginState extends State<FlutterAnimatedLogin> {
 
   void _attach(FlutterAnimatedLoginController? external) {
     _ownsController = external == null;
-    _controller = external ??
+    _controller =
+        external ??
         FlutterAnimatedLoginController(
           initialIdentifier: widget.loginConfig.textFiledConfig.initialValue,
           initialCountryCode:
@@ -236,9 +237,10 @@ class _FlutterAnimatedLoginState extends State<FlutterAnimatedLogin> {
   @override
   Widget build(BuildContext context) {
     final theme = widget.theme;
-    final resolved = theme == null
-        ? AnimatedLoginTheme.of(context)
-        : AnimatedLoginTheme.of(context).merge(theme);
+    final resolved =
+        theme == null
+            ? AnimatedLoginTheme.of(context)
+            : AnimatedLoginTheme.of(context).merge(theme);
 
     Widget flow = AnimatedLoginScope(
       controller: _controller,
@@ -259,14 +261,15 @@ class _FlutterAnimatedLoginState extends State<FlutterAnimatedLogin> {
     // screens, with no way to return to the login screen but a small link.
     return ListenableBuilder(
       listenable: _controller,
-      builder: (context, child) => PopScope(
-        canPop: _controller.step == LoginStep.login,
-        onPopInvokedWithResult: (didPop, _) {
-          if (didPop) return;
-          _controller.goTo(LoginStep.login);
-        },
-        child: child!,
-      ),
+      builder:
+          (context, child) => PopScope(
+            canPop: _controller.step == LoginStep.login,
+            onPopInvokedWithResult: (didPop, _) {
+              if (didPop) return;
+              _controller.goTo(LoginStep.login);
+            },
+            child: child!,
+          ),
       child: flow,
     );
   }
@@ -290,7 +293,8 @@ class _AnimatedLoginBody extends StatelessWidget {
 
     final screens = <LoginStep, Widget Function()>{
       LoginStep.login: () => _LoginPage(owner: owner, controller: controller),
-      LoginStep.verify: () => FlutterAnimatedVerify(
+      LoginStep.verify:
+          () => FlutterAnimatedVerify(
             onVerify: owner.onVerify,
             onResendOtp: owner.onResendOtp,
             config: owner.verifyConfig,
@@ -302,7 +306,8 @@ class _AnimatedLoginBody extends StatelessWidget {
             providerLayout: owner.loginConfig.providerLayout,
             providerSpacing: owner.loginConfig.providerSpacing,
           ),
-      LoginStep.signup: () => FlutterAnimatedSignup(
+      LoginStep.signup:
+          () => FlutterAnimatedSignup(
             onSignup: owner.onSignup,
             loginConfig: owner.loginConfig,
             loginType: owner.loginType,
@@ -313,7 +318,8 @@ class _AnimatedLoginBody extends StatelessWidget {
             termsAndConditions: owner.termsAndConditions,
             providers: owner.providers,
           ),
-      LoginStep.resetPassword: () => FlutterAnimatedReset(
+      LoginStep.resetPassword:
+          () => FlutterAnimatedReset(
             onResetPassword: owner.onResetPassword,
             loginConfig: owner.loginConfig,
             loginType: owner.loginType,
@@ -325,11 +331,13 @@ class _AnimatedLoginBody extends StatelessWidget {
 
     return AnimatedStack(
       value: controller.step.index,
-      duration: loginTheme.pageTransitionDuration ??
+      duration:
+          loginTheme.pageTransitionDuration ??
           const Duration(milliseconds: 300),
       switchInCurve: loginTheme.pageTransitionCurve ?? Curves.easeIn,
       switchOutCurve: loginTheme.pageTransitionCurve ?? Curves.easeOut,
-      transitionBuilder: loginTheme.pageTransitionBuilder ??
+      transitionBuilder:
+          loginTheme.pageTransitionBuilder ??
           AnimatedSwitcher.defaultTransitionBuilder,
       // Only the visible screen is built. Before 1.0.0 all four were
       // constructed on every frame and then thrown away.
@@ -374,10 +382,7 @@ class _LoginPageState extends State<_LoginPage> {
       return null;
     }
     if (!(_formKey.currentState?.validate() ?? false)) {
-      context.error(
-        messages.errorTitle,
-        description: messages.invalidFormData,
-      );
+      context.error(messages.errorTitle, description: messages.invalidFormData);
       return null;
     }
     _formKey.currentState?.save();
@@ -439,81 +444,83 @@ class _LoginPageState extends State<_LoginPage> {
 
     return PageWidget(
       config: owner.config,
-      builder: (context, constraints) => Form(
-        key: _formKey,
-        // Lets the platform password manager offer to save the credentials.
-        child: AutofillGroup(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              config.header ??
-                  config.titleWidget ??
-                  TitleWidget(
-                    title: config.title,
-                    subtitle: config.subtitle,
-                    child: config.logo,
+      builder:
+          (context, constraints) => Form(
+            key: _formKey,
+            // Lets the platform password manager offer to save the credentials.
+            child: AutofillGroup(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  config.header ??
+                      config.titleWidget ??
+                      TitleWidget(
+                        title: config.title,
+                        subtitle: config.subtitle,
+                        child: config.logo,
+                      ),
+                  IdentityField(
+                    config: config.textFiledConfig,
+                    controller: controller,
+                    formMessages: messages,
+                    loginFieldInputType: config.loginFieldInputType,
+                    textInputAction:
+                        _needsPassword
+                            ? TextInputAction.next
+                            : TextInputAction.done,
+                    onSubmitted: _needsPassword ? null : (_) => _submit(),
                   ),
-              IdentityField(
-                config: config.textFiledConfig,
-                controller: controller,
-                formMessages: messages,
-                loginFieldInputType: config.loginFieldInputType,
-                textInputAction: _needsPassword
-                    ? TextInputAction.next
-                    : TextInputAction.done,
-                onSubmitted: _needsPassword ? null : (_) => _submit(),
-              ),
-              if (_needsPassword) ...[
-                SizedBox(height: gap),
-                PasswordTextField(
-                  config: config.passwordConfig.copyWith(
-                    textInputAction: TextInputAction.done,
+                  if (_needsPassword) ...[
+                    SizedBox(height: gap),
+                    PasswordTextField(
+                      config: config.passwordConfig.copyWith(
+                        textInputAction: TextInputAction.done,
+                      ),
+                      controller: controller.passwordController,
+                      formMessages: messages,
+                      onSubmitted: (_) => _submit(),
+                    ),
+                  ],
+                  if (owner.loginType == LoginType.otpAndPassword)
+                    LoginMethodToggle(
+                      messages: messages,
+                      controller: controller,
+                      textStyle: config.buttonTextStyle,
+                    ),
+                  if (showSignup || showForgot) ...[
+                    const SizedBox(height: 8),
+                    SignUpAndForgetButton(
+                      messages: messages,
+                      controller: controller,
+                      showSignup: showSignup,
+                      showForgot: showForgot,
+                      textStyle: config.buttonTextStyle,
+                    ),
+                  ],
+                  if (consent != null && consent.showOnLogin) ...[
+                    SizedBox(height: gap / 2),
+                    ConsentCheckbox(config: consent, controller: controller),
+                  ],
+                  SizedBox(height: gap),
+                  SignInButton(
+                    onPressed: _submit,
+                    config: config,
+                    loginType: owner.loginType,
+                    controller: controller,
                   ),
-                  controller: controller.passwordController,
-                  formMessages: messages,
-                  onSubmitted: (_) => _submit(),
-                ),
-              ],
-              if (owner.loginType == LoginType.otpAndPassword)
-                LoginMethodToggle(
-                  messages: messages,
-                  controller: controller,
-                  textStyle: config.buttonTextStyle,
-                ),
-              if (showSignup || showForgot) ...[
-                const SizedBox(height: 8),
-                SignUpAndForgetButton(
-                  messages: messages,
-                  controller: controller,
-                  showSignup: showSignup,
-                  showForgot: showForgot,
-                  textStyle: config.buttonTextStyle,
-                ),
-              ],
-              if (consent != null && consent.showOnLogin) ...[
-                SizedBox(height: gap / 2),
-                ConsentCheckbox(config: consent, controller: controller),
-              ],
-              SizedBox(height: gap),
-              SignInButton(
-                onPressed: _submit,
-                config: config,
-                loginType: owner.loginType,
-                controller: controller,
+                  OAuthWidget(
+                    providers: owner.providers,
+                    termsAndConditions: owner.termsAndConditions,
+                    footerWidget: config.footer,
+                    messages: messages,
+                    controller: controller,
+                    layout: config.providerLayout,
+                    spacing: config.providerSpacing,
+                  ),
+                ],
               ),
-              OAuthWidget(
-                providers: owner.providers,
-                termsAndConditions: owner.termsAndConditions,
-                footerWidget: config.footer,
-                messages: messages,
-                controller: controller,
-                layout: config.providerLayout,
-                spacing: config.providerSpacing,
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 }
