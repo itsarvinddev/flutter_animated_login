@@ -1,0 +1,47 @@
+name: Feature request
+description: Suggest something flutter_animated_login should be able to do.
+title: "[feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before opening this, check whether the package already covers it:
+        `FormMessages` holds every user-facing string, `AnimatedLoginTheme`
+        holds the colours and shapes, `SignupField`/`SignupFieldBuilder` add
+        arbitrary widgets to the signup screen, and `PageConfig` /
+        `PageBuilder` replace the page scaffold outright.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What can't you do today
+      description: >
+        Describe the app you are building and the point at which the package
+        stops being enough. Concrete beats abstract.
+      placeholder: |
+        Our backend issues 8-digit codes, but VerifyConfig seems to assume 6.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like instead
+      description: >
+        If you have an API in mind, sketch it — a new field on an existing
+        config is usually easier to land than a new top-level widget.
+      render: Dart
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: What you are doing instead right now
+      description: Forked the package, wrapped the widget, gave up — all useful to know.
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I am willing to open a pull request for this

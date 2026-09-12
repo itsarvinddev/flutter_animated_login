@@ -56,21 +56,14 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
-            <intent-filter>
-                <action android:name="FLUTTER_NOTIFICATION_CLICK" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-            <!-- Deep linking -->
+            <!-- Deep linking, so the controller-driven demo can be opened
+                 with flutteranimatedlogin://login?identifier=... -->
             <meta-data android:name="flutter_deeplinking_enabled" android:value="true" />
-            <intent-filter android:autoVerify="true">
+            <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="http" android:host="mohesu.com"/>
-                <data android:scheme="https"/>
-                <data android:scheme="http" android:host="clouds.mohesu.com"/>
-                <data android:scheme="https"/>
-                <data android:host="otpless" android:scheme= "${applicationId}.otpless"/>
+                <data android:scheme="flutteranimatedlogin" android:host="login"/>
             </intent-filter>
 
         </activity>
@@ -79,7 +72,5 @@
        <meta-data
                android:name="flutterEmbedding"
                android:value="2" />
-       <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id"
-                  android:value="com.example.flutteranimatedlogin" />
    </application>
 </manifest>

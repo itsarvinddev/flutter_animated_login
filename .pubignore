@@ -1,0 +1,44 @@
+# NOTE: when this file exists, pub ignores .gitignore entirely — so everything
+# .gitignore covers has to be repeated here. Leaving it out let the 94 MB
+# `build/` dill cache that `flutter test` produces into the archive.
+
+# --- build output and tool state (mirrors .gitignore) ---
+build/
+.dart_tool/
+.packages
+pubspec.lock
+**/doc/api/
+*.iml
+*.ipr
+*.iws
+.idea/
+.vscode/
+.DS_Store
+*.log
+*.swp
+migrate_working_dir/
+
+# --- large media that no consumer needs to compile the package ---
+# The 32 MB demo video sat in the archive for every release up to 0.0.15.
+# The screenshots stay: pubspec `screenshots:` points at them and pub.dev
+# renders them on the package page.
+video-1.mov
+
+# --- the example's native scaffold ---
+# Six platform folders of generated boilerplate. example/lib and
+# example/pubspec.yaml still ship, so the code is readable from pub.dev.
+example/android/
+example/ios/
+example/linux/
+example/macos/
+example/windows/
+example/web/
+example/build/
+example/.dart_tool/
+example/pubspec.lock
+example/devtools_options.yaml
+
+# --- repository furniture ---
+.github/
+devtools_options.yaml
+CONTRIBUTING.md

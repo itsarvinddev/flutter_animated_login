@@ -1,10 +1,12 @@
 name: flutter_animated_login
 description: "A Flutter package to create a beautiful animated login screen with phone/email otp, password, and social login options. It also includes a phone number with country code picker."
-version: 0.0.15
-homepage: https://github.com/rvndsngwn/flutter_animated_login
-repository: https://github.com/rvndsngwn/flutter_animated_login
-issue_tracker: https://github.com/rvndsngwn/flutter_animated_login/issues
-documentation: https://github.com/rvndsngwn/flutter_animated_login/blob/master/README.md
+version: 1.0.0
+homepage: https://github.com/itsarvinddev/flutter_animated_login
+repository: https://github.com/itsarvinddev/flutter_animated_login
+issue_tracker: https://github.com/itsarvinddev/flutter_animated_login/issues
+documentation: https://github.com/itsarvinddev/flutter_animated_login#readme
+funding:
+  - https://github.com/sponsors/itsarvinddev
 screenshots:
   - description: "Login Screen with Phone/Email"
     path: image-1.png
@@ -12,25 +14,29 @@ screenshots:
     path: image-2.png
 
 topics:
-  - flutter-login
-  - flutter-animated-login
-  - flutter-login-screen
-  - flutter-login-ui
-  - animated-login
+  - login
+  - authentication
+  - otp
+  - forms
+  - ui
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
-  flutter: ">=3.10.0"
+  # Color.withValues and stylusHandwritingEnabled both landed in Flutter 3.27;
+  # the package already used the first while declaring 3.10, which could not
+  # compile. flutter_intl_phone_field needs 3.22 at minimum.
+  sdk: ">=3.6.0 <4.0.0"
+  flutter: ">=3.27.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  flutter_intl_phone_field: ^0.0.7
-  pinput: ^5.0.1
-  signals: ^6.0.2
+  flutter_intl_phone_field: ^0.1.0
+  pinput: ^6.0.2
 
 dev_dependencies:
-  flutter_lints: ^5.0.0
+  # A range, not a caret: 6.x needs Dart 3.8, while this package supports
+  # Flutter 3.27 (Dart 3.6). CI lints on the newest stable, which picks 6.x.
+  flutter_lints: ">=5.0.0 <7.0.0"
   flutter_test:
     sdk: flutter
 

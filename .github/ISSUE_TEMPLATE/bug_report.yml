@@ -1,0 +1,116 @@
+name: Bug report
+description: Something in flutter_animated_login behaves differently than documented.
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. The fastest fix comes from a reproduction that
+        runs on its own — a `main.dart` we can paste into a fresh
+        `flutter create` app and run.
+
+        Upgrading from 0.0.x? Read [MIGRATION.md](https://github.com/itsarvinddev/flutter_animated_login/blob/main/MIGRATION.md)
+        first — 1.0.0 replaced the global `signals` state with
+        `FlutterAnimatedLoginController`, and several old symbols are gone.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead.
+      placeholder: |
+        The phone field keeps the previous user's number after signing out.
+        I expected an empty field.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: >
+        A complete `main.dart` that shows the problem — no app-specific code,
+        no private packages. Cut it down until removing one more line makes
+        the bug disappear.
+      render: Dart
+      placeholder: |
+        import 'package:flutter/material.dart';
+        import 'package:flutter_animated_login/flutter_animated_login.dart';
+
+        void main() => runApp(const MaterialApp(home: Demo()));
+
+        class Demo extends StatelessWidget {
+          const Demo({super.key});
+
+          @override
+          Widget build(BuildContext context) => FlutterAnimatedLogin(
+                onLogin: (data) async => null,
+              );
+        }
+    validations:
+      required: true
+
+  - type: input
+    id: package-version
+    attributes:
+      label: flutter_animated_login version
+      description: The resolved version from your `pubspec.lock`, not the constraint.
+      placeholder: "1.0.0"
+    validations:
+      required: true
+
+  - type: textarea
+    id: flutter-version
+    attributes:
+      label: Flutter version
+      description: Paste the full output of `flutter doctor -v`.
+      render: shell
+      placeholder: |
+        [✓] Flutter (Channel stable, 3.27.0, on macOS 15.0, locale en-US)
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: platforms
+    attributes:
+      label: Platforms you reproduced this on
+      options:
+        - label: Android
+        - label: iOS
+        - label: Web
+        - label: macOS
+        - label: Windows
+        - label: Linux
+
+  - type: dropdown
+    id: screen
+    attributes:
+      label: Which screen
+      description: The `LoginStep` the flow was on when it went wrong.
+      options:
+        - login
+        - verify (one-time code)
+        - signup
+        - resetPassword
+        - not screen-specific
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Relevant configuration
+      description: >
+        The `LoginConfig`, `VerifyConfig`, `SignupConfig`, `ResetConfig`,
+        `PasswordPolicy`, `FormMessages` or `AnimatedLoginTheme` involved —
+        `loginFieldInputType` in particular, since the identity field renders
+        a different widget in phone and email mode.
+      render: Dart
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Errors or logs
+      description: Any exception and its full stack trace.
+      render: shell

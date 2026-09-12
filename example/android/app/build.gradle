@@ -99,9 +99,17 @@ flutter {
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation 'com.google.firebase:firebase-messaging'
-    implementation 'com.google.firebase:firebase-analytics-ktx'
-    implementation 'com.google.gms:google-services:4.3.15'
-    implementation platform('com.google.firebase:firebase-bom:30.4.1')
+    // Intentionally empty. flutter_animated_login is pure Dart: it declares no
+    // Flutter plugin and ships no native code, so the example needs nothing
+    // here.
+    //
+    // This block used to pin org.jetbrains.kotlin:kotlin-stdlib-jdk7, which is
+    // the legacy artifact behind the "Duplicate class kotlin.collections.jdk8"
+    // build failure people hit when it is mixed with a modern kotlin-stdlib.
+    // The Kotlin Gradle plugin supplies the standard library already.
+    //
+    // It also declared Firebase Messaging and Analytics, plus the
+    // google-services *plugin* as a runtime dependency, with no
+    // google-services.json anywhere in the project - all leftovers from an
+    // unrelated app.
 }

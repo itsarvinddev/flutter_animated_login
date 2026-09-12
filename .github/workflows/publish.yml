@@ -1,0 +1,73 @@
+name: Publish to pub.dev
+
+# Publishes on a version tag using pub.dev's automated publishing: the runner
+# mints a short-lived OIDC token instead of a long-lived pub.dev credential,
+# so nothing secret has to live in this repository.
+#
+# One-time setup on pub.dev -> Admin -> Automated publishing: enable GitHub
+# Actions publishing for itsarvinddev/flutter_animated_login with tag pattern
+# `v{{version}}`.
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+
+    # Forks inherit tags. Without this a fork pushing a v* tag starts a run
+    # that can only ever fail, because pub.dev binds automated publishing to
+    # one repository.
+    if: github.repository == 'itsarvinddev/flutter_animated_login'
+
+    permissions:
+      # Required: this is what lets the job request the OIDC token pub.dev
+      # exchanges for a publishing credential. Without it `pub publish` falls
+      # back to asking for interactive authentication and the job hangs.
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        # Deliberately NOT dart-lang/setup-dart. That action installs a
+        # standalone Dart SDK, and this package depends on `flutter` and
+        # `flutter_test` from the SDK, so pub refuses before it ever gets to
+        # publishing:
+        #
+        #   Because flutter_animated_login requires the Flutter SDK, version
+        #   solving failed.
+        #   Flutter users should use `flutter pub` instead of `dart pub`.
+        #
+        # flutter-action installs the Flutter SDK (Dart included) and the
+        # bundled pub client speaks the same OIDC protocol, so automated
+        # publishing works unchanged.
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Check the tag matches pubspec.yaml
+        # A tag that disagrees with `version:` publishes a release under the
+        # wrong number, and pub.dev versions are immutable once published.
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME#v}"
+          version="$(sed -n 's/^version: *//p' pubspec.yaml | head -1 | tr -d '\r')"
+          echo "tag: $GITHUB_REF_NAME (version $tag)"
+          echo "pubspec.yaml: $version"
+          if [ "$tag" != "$version" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match pubspec.yaml version $version"
+            exit 1
+          fi
+
+      - name: Publish dry run
+        run: flutter pub publish --dry-run
+
+      - name: Publish
+        run: flutter pub publish --force
