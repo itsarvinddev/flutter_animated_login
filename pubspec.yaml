@@ -16,7 +16,7 @@ screenshots:
     path: screenshots/signup.webp
   - description: "Branded full-width social sign-in buttons"
     path: screenshots/social-buttons.webp
-  - description: "Dark mode"
+  - description: "The login screen in dark mode"
     path: screenshots/dark-mode.webp
   - description: "Wide layout on tablet, desktop and web"
     path: screenshots/tablet.webp
