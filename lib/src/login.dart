@@ -182,6 +182,9 @@ class FlutterAnimatedLogin extends StatefulWidget {
 }
 
 class _FlutterAnimatedLoginState extends State<FlutterAnimatedLogin> {
+  // Shared by every screen, so any success dismisses the last error.
+  final ScreenErrorSnackBar _errors = ScreenErrorSnackBar();
+
   late FlutterAnimatedLoginController _controller;
   bool _ownsController = false;
   LoginStep? _lastStep;
@@ -267,7 +270,10 @@ class _FlutterAnimatedLoginState extends State<FlutterAnimatedLogin> {
       );
     }
 
-    Widget flow = AnimatedLoginScope(controller: _controller, child: body);
+    Widget flow = AnimatedLoginScope(
+      controller: _controller,
+      child: ScreenErrorScope(errors: _errors, child: body),
+    );
 
     if (theme != null) {
       flow = AnimatedLoginThemeScope(theme: resolved, child: flow);
@@ -393,7 +399,7 @@ class _LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<_LoginPage> {
-  final ScreenErrorSnackBar _errors = ScreenErrorSnackBar();
+  ScreenErrorSnackBar get _errors => ScreenErrorSnackBar.of(context);
   // Each screen owns its own Form. Before 1.0.0 one GlobalKey wrapped the
   // switcher, so during a page transition two screens' fields lived in the
   // same FormState and validate() ran against the screen being left.
@@ -410,6 +416,9 @@ class _LoginPageState extends State<_LoginPage> {
   bool get _needsPassword => !_usesOtp;
 
   Future<String?> _submit() async {
+    // The keyboard's action key reaches here even while the button is
+    // disabled: during a request, or while a successful flow waits to reset.
+    if (controller.isBusy) return null;
     final consent = widget.owner.consent;
     // Only gate on consent this screen actually shows. Checking isRequired
     // alone meant terms required at sign-up blocked every *login* with
@@ -462,7 +471,7 @@ class _LoginPageState extends State<_LoginPage> {
         // Signals the platform that the credentials are worth saving; without
         // it the AutofillGroup never prompts.
         TextInput.finishAutofillContext();
-        resetUnlessNavigatedAway(context, () {
+        resetUnlessNavigatedAway(context, controller, () {
           _formKey.currentState?.reset();
           controller.reset();
         });

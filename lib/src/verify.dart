@@ -65,7 +65,7 @@ class FlutterAnimatedVerify extends StatefulWidget {
 }
 
 class _FlutterAnimatedVerifyState extends State<FlutterAnimatedVerify> {
-  final ScreenErrorSnackBar _errors = ScreenErrorSnackBar();
+  ScreenErrorSnackBar get _errors => ScreenErrorSnackBar.of(context);
   Timer? _cooldownTimer;
   Duration _remaining = Duration.zero;
   bool _submitting = false;
@@ -147,7 +147,8 @@ class _FlutterAnimatedVerifyState extends State<FlutterAnimatedVerify> {
   }
 
   Future<void> _onCompleted(String value) async {
-    if (_submitting) return;
+    // Busy also covers the wait before a successful flow resets.
+    if (_submitting || controller.isBusy) return;
     _submitting = true;
     final data = LoginData(
       name: _name,
@@ -168,7 +169,7 @@ class _FlutterAnimatedVerifyState extends State<FlutterAnimatedVerify> {
         controller.clearOtp();
       } else {
         _errors.dismiss(context);
-        resetUnlessNavigatedAway(context, controller.reset);
+        resetUnlessNavigatedAway(context, controller, controller.reset);
       }
     } finally {
       _submitting = false;

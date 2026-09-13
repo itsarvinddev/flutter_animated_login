@@ -61,7 +61,7 @@ class FlutterAnimatedSignup extends StatefulWidget {
 
 class _FlutterAnimatedSignupState extends State<FlutterAnimatedSignup> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final ScreenErrorSnackBar _errors = ScreenErrorSnackBar();
+  ScreenErrorSnackBar get _errors => ScreenErrorSnackBar.of(context);
 
   // Rebuilds this screen whenever a custom field writes to it. It used to be a
   // plain map: writing to it rebuilt nothing, so the documented checkbox or
@@ -100,6 +100,9 @@ class _FlutterAnimatedSignupState extends State<FlutterAnimatedSignup> {
   }
 
   Future<String?> _submit() async {
+    // The keyboard's action key reaches here even while the button is
+    // disabled: during a request, or while a successful flow waits to reset.
+    if (controller.isBusy) return null;
     final consent = widget.consent;
     if ((consent?.isRequired ?? false) &&
         (consent?.showOnSignup ?? true) &&
@@ -151,7 +154,7 @@ class _FlutterAnimatedSignupState extends State<FlutterAnimatedSignup> {
       }
       TextInput.finishAutofillContext();
       _errors.dismiss(context);
-      resetUnlessNavigatedAway(context, () {
+      resetUnlessNavigatedAway(context, controller, () {
         if (config.loginAfterSignUp) {
           // Keep what was typed so the user can sign straight in.
           // Authenticating is your own onSignup's job.

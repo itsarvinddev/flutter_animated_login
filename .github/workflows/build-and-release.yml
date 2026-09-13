@@ -50,9 +50,11 @@ jobs:
       - name: Deploy web To GH-Page
         uses: peaceiris/actions-gh-pages@v3
         with:
-          # PERSONAL_TOKEN is configured on this repository. GitHub Pages is
-          # set to the legacy gh-pages branch source, which this action
-          # publishes to.
-          personal_token: ${{ secrets.PERSONAL_TOKEN }}
+          # The job's own token, allowed to push by `permissions: contents:
+          # write` above. The PERSONAL_TOKEN secret this used before was
+          # rejected ("Invalid username or token"), which failed every deploy
+          # of the 1.0.0 demo. GitHub Pages is set to the legacy gh-pages
+          # branch source, which this action publishes to.
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           publish_dir: ./example/build/web
