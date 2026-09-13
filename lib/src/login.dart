@@ -52,8 +52,9 @@ enum LoginType {
   /// switches to the one-time-code path, and [LoginData.method] tells you which
   /// one ran.
   ///
-  /// Before 1.0.0 this behaved exactly like [otp] — no password field, no
-  /// choice, and no advance to the verify screen.
+  /// Before 1.0.0 this showed a code-only screen — no password field and no
+  /// choice — and on success cleared the form instead of opening the verify
+  /// screen.
   otpAndPassword,
 }
 
@@ -123,6 +124,11 @@ class FlutterAnimatedLogin extends StatefulWidget {
   ///
   /// Optional: one is created and disposed internally when you pass none. A
   /// controller you supply is yours to dispose.
+  ///
+  /// When you pass one, the `controller` fields inside [loginConfig] and
+  /// [verifyConfig] are ignored — the flow controller owns the text
+  /// controllers. Pass yours to [FlutterAnimatedLoginController]'s constructor
+  /// instead.
   final FlutterAnimatedLoginController? controller;
 
   /// Branding for every screen. Wins over
@@ -242,14 +248,26 @@ class _FlutterAnimatedLoginState extends State<FlutterAnimatedLogin> {
             ? AnimatedLoginTheme.of(context)
             : AnimatedLoginTheme.of(context).merge(theme);
 
-    Widget flow = AnimatedLoginScope(
+    Widget body = _AnimatedLoginBody(
+      owner: widget,
       controller: _controller,
-      child: _AnimatedLoginBody(
-        owner: widget,
-        controller: _controller,
-        loginTheme: resolved,
-      ),
+      loginTheme: resolved,
     );
+
+    // One Scaffold for the whole flow, outside the step cross-fade. Each step
+    // used to build its own, so for the 300 ms of a transition two Scaffolds
+    // shared a route and both drew the current SnackBar under the same Hero
+    // tag. If the host navigated in that window -- go_router's context.go or
+    // an auth redirect after a wrong code, say -- Flutter threw "There are
+    // multiple heroes that share the same tag within a subtree".
+    if (widget.config.useScaffold) {
+      body = Scaffold(
+        backgroundColor: widget.config.scaffoldBackgroundColor,
+        body: body,
+      );
+    }
+
+    Widget flow = AnimatedLoginScope(controller: _controller, child: body);
 
     if (theme != null) {
       flow = AnimatedLoginThemeScope(theme: resolved, child: flow);
@@ -286,19 +304,32 @@ class _AnimatedLoginBody extends StatelessWidget {
   final FlutterAnimatedLoginController controller;
   final AnimatedLoginTheme loginTheme;
 
+  /// The page configuration each step draws with. The Scaffold, if any, is
+  /// already provided once by [FlutterAnimatedLogin] itself.
+  PageConfig get _stepPageConfig =>
+      owner.config.useScaffold
+          ? owner.config.copyWith(useScaffold: false)
+          : owner.config;
+
   @override
   Widget build(BuildContext context) {
     // Subscribe to the controller so a step change rebuilds the switcher.
     AnimatedLoginScope.of(context);
+    final pageConfig = _stepPageConfig;
 
     final screens = <LoginStep, Widget Function()>{
-      LoginStep.login: () => _LoginPage(owner: owner, controller: controller),
+      LoginStep.login:
+          () => _LoginPage(
+            owner: owner,
+            controller: controller,
+            pageConfig: pageConfig,
+          ),
       LoginStep.verify:
           () => FlutterAnimatedVerify(
             onVerify: owner.onVerify,
             onResendOtp: owner.onResendOtp,
             config: owner.verifyConfig,
-            pageConfig: owner.config,
+            pageConfig: pageConfig,
             formMessages: owner.loginConfig.messages,
             controller: controller,
             termsAndConditions: owner.termsAndConditions,
@@ -311,7 +342,7 @@ class _AnimatedLoginBody extends StatelessWidget {
             onSignup: owner.onSignup,
             loginConfig: owner.loginConfig,
             loginType: owner.loginType,
-            pageConfig: owner.config,
+            pageConfig: pageConfig,
             config: owner.signupConfig,
             controller: controller,
             consent: owner.consent,
@@ -323,7 +354,7 @@ class _AnimatedLoginBody extends StatelessWidget {
             onResetPassword: owner.onResetPassword,
             loginConfig: owner.loginConfig,
             loginType: owner.loginType,
-            pageConfig: owner.config,
+            pageConfig: pageConfig,
             config: owner.resetConfig,
             controller: controller,
           ),
@@ -347,16 +378,22 @@ class _AnimatedLoginBody extends StatelessWidget {
 }
 
 class _LoginPage extends StatefulWidget {
-  const _LoginPage({required this.owner, required this.controller});
+  const _LoginPage({
+    required this.owner,
+    required this.controller,
+    required this.pageConfig,
+  });
 
   final FlutterAnimatedLogin owner;
   final FlutterAnimatedLoginController controller;
+  final PageConfig pageConfig;
 
   @override
   State<_LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<_LoginPage> {
+  final ScreenErrorSnackBar _errors = ScreenErrorSnackBar();
   // Each screen owns its own Form. Before 1.0.0 one GlobalKey wrapped the
   // switcher, so during a page transition two screens' fields lived in the
   // same FormState and validate() ran against the screen being left.
@@ -374,15 +411,27 @@ class _LoginPageState extends State<_LoginPage> {
 
   Future<String?> _submit() async {
     final consent = widget.owner.consent;
-    if ((consent?.isRequired ?? false) && !controller.acceptedTerms) {
-      context.error(
+    // Only gate on consent this screen actually shows. Checking isRequired
+    // alone meant terms required at sign-up blocked every *login* with
+    // "Please accept the terms to continue" -- on a screen with no checkbox to
+    // tick, so nobody could sign in at all. This matches the button's own
+    // gating below and the signup screen's check.
+    final consentGates =
+        (consent?.isRequired ?? false) && (consent?.showOnLogin ?? false);
+    if (consentGates && !controller.acceptedTerms) {
+      _errors.show(
+        context,
         messages.errorTitle,
         description: consent?.errorText ?? messages.consentRequired,
       );
       return null;
     }
     if (!(_formKey.currentState?.validate() ?? false)) {
-      context.error(messages.errorTitle, description: messages.invalidFormData);
+      _errors.show(
+        context,
+        messages.errorTitle,
+        description: messages.invalidFormData,
+      );
       return null;
     }
     _formKey.currentState?.save();
@@ -403,17 +452,20 @@ class _LoginPageState extends State<_LoginPage> {
       );
       if (!mounted) return null;
       if (result.isNotEmptyOrNull) {
-        context.error(messages.errorTitle, description: result);
+        _errors.show(context, messages.errorTitle, description: result);
         return result;
       }
+      _errors.dismiss(context);
       if (_usesOtp) {
         controller.showOtp();
       } else {
         // Signals the platform that the credentials are worth saving; without
         // it the AutofillGroup never prompts.
         TextInput.finishAutofillContext();
-        _formKey.currentState?.reset();
-        controller.reset();
+        resetUnlessNavigatedAway(context, () {
+          _formKey.currentState?.reset();
+          controller.reset();
+        });
       }
       return null;
     } finally {
@@ -443,7 +495,7 @@ class _LoginPageState extends State<_LoginPage> {
     final showForgot = config.showForgotLink ?? (owner.onResetPassword != null);
 
     return PageWidget(
-      config: owner.config,
+      config: widget.pageConfig,
       builder:
           (context, constraints) => Form(
             key: _formKey,

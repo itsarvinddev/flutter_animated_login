@@ -17,7 +17,7 @@ import '../utils/extension.dart';
 /// country selector hidden; since flutter_intl_phone_field 0.1.0 reduces that
 /// field's value to digits, an email address came back as the empty string and
 /// email sign-in stopped working altogether.
-class IdentityField extends StatelessWidget {
+class IdentityField extends StatefulWidget {
   /// Creates the identifier field.
   const IdentityField({
     super.key,
@@ -47,15 +47,139 @@ class IdentityField extends StatelessWidget {
   /// Which action key the keyboard shows. Overrides [config].
   final TextInputAction? textInputAction;
 
+  @override
+  State<IdentityField> createState() => _IdentityFieldState();
+}
+
+class _IdentityFieldState extends State<IdentityField> {
+  EmailPhoneTextFiledConfig get config => widget.config;
+  FlutterAnimatedLoginController get controller => widget.controller;
+  FormMessages get formMessages => widget.formMessages;
+  LoginFieldInputType get loginFieldInputType => widget.loginFieldInputType;
+  ValueChanged<String>? get onSubmitted => widget.onSubmitted;
+  TextInputAction? get textInputAction => widget.textInputAction;
+
+  // One node per variant, so that moving between them is a genuine focus
+  // change. EditableText only opens its keyboard connection when its focus
+  // *changes*: a field that mounts on an already-focused node never receives
+  // input. A caller-supplied [EmailPhoneTextFiledConfig.focusNode] is used for
+  // both variants instead, and never disposed here.
+  FocusNode? _ownedEmailFocus;
+  FocusNode? _ownedPhoneFocus;
+  bool? _wasPhone;
+
+  // The email field edits its own controller, mirrored to the shared
+  // identifier controller in both directions, rather than the shared one.
+  //
+  // IntlPhoneField writes the shared controller in its initState. On the
+  // email-to-phone swap that happens in the very frame the email field is
+  // deactivated, and with formatInput on the write changes the text
+  // ("2015550123" -> "(201) 555-0123") -- so a TextFormField still listening to
+  // the shared controller was notified while deactivated: "Looking up a
+  // deactivated widget's ancestor is unsafe". Mirroring only while in email
+  // mode keeps the outgoing email field out of that notification entirely.
+  final TextEditingController _emailController = TextEditingController();
+  late TextEditingController _shared;
+
+  @override
+  void initState() {
+    super.initState();
+    _shared = controller.identifierController;
+    _emailController.value = _shared.value;
+    _shared.addListener(_sharedToEmail);
+    _emailController.addListener(_emailToShared);
+  }
+
+  @override
+  void didUpdateWidget(IdentityField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final next = controller.identifierController;
+    if (!identical(next, _shared)) {
+      _shared.removeListener(_sharedToEmail);
+      _shared = next;
+      _shared.addListener(_sharedToEmail);
+      _emailController.value = _shared.value;
+    }
+  }
+
+  void _sharedToEmail() {
+    // In phone mode the email field is gone or going; leave it alone.
+    if (_wasPhone ?? false) return;
+    if (_emailController.value == _shared.value) return;
+    _emailController.value = _shared.value;
+  }
+
+  void _emailToShared() {
+    if (_shared.value == _emailController.value) return;
+    _shared.value = _emailController.value;
+  }
+
+  FocusNode get _emailFocus =>
+      config.focusNode ??
+      (_ownedEmailFocus ??= FocusNode(debugLabel: 'IdentityField.email'));
+
+  FocusNode get _phoneFocus =>
+      config.focusNode ??
+      (_ownedPhoneFocus ??= FocusNode(debugLabel: 'IdentityField.phone'));
+
+  @override
+  void dispose() {
+    _shared.removeListener(_sharedToEmail);
+    _emailController.removeListener(_emailToShared);
+    _emailController.dispose();
+    _ownedEmailFocus?.dispose();
+    _ownedPhoneFocus?.dispose();
+    super.dispose();
+  }
+
   bool get _isPhone => switch (loginFieldInputType) {
     LoginFieldInputType.phone => true,
     LoginFieldInputType.email => false,
     LoginFieldInputType.phoneOrEmail => controller.isPhone,
   };
 
+  /// Carries keyboard focus across a swap between the email and phone fields.
+  ///
+  /// In [LoginFieldInputType.phoneOrEmail] the first digit typed replaces the
+  /// email field with the phone field. Without this the new field mounted
+  /// unfocused, the keyboard closed, and every keystroke after the first was
+  /// dropped — phone entry in the default mode took one digit.
+  void _carryFocusAcrossSwap(bool isPhone) {
+    final was = _wasPhone;
+    _wasPhone = isPhone;
+    if (was == null || was == isPhone) return;
+
+    final from = was ? _phoneFocus : _emailFocus;
+    // Checked now, while the outgoing field is still mounted and focused.
+    if (!from.hasFocus) return;
+    final to = isPhone ? _phoneFocus : _emailFocus;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!identical(from, to)) {
+        to.requestFocus();
+        return;
+      }
+      // A single caller-supplied node serves both fields. It still counts as
+      // focused, so bounce it: the new field needs to see a change to open its
+      // own keyboard connection.
+      to.unfocus();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) to.requestFocus();
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return _isPhone ? _buildPhone(context) : _buildEmail(context);
+    final isPhone = _isPhone;
+    _carryFocusAcrossSwap(isPhone);
+    if (!isPhone && _emailController.value != _shared.value) {
+      // Catch up on anything typed in phone mode. The copy back to the shared
+      // controller is equal, so it notifies no one.
+      _emailController.value = _shared.value;
+    }
+    return isPhone ? _buildPhone(context) : _buildEmail(context);
   }
 
   InputDecoration _decoration(BuildContext context, {required bool isPhone}) {
@@ -100,8 +224,11 @@ class IdentityField extends StatelessWidget {
 
     return TextFormField(
       key: const ValueKey<String>('flutter_animated_login.identity.email'),
-      controller: controller.identifierController,
-      focusNode: config.focusNode,
+      controller: _emailController,
+      focusNode: _emailFocus,
+      // An address reads left-to-right in every locale. Inheriting RTL lets
+      // the bidi algorithm move neutral characters such as a trailing dot.
+      textDirection: TextDirection.ltr,
       enabled: config.enabled,
       readOnly: config.readOnly,
       autofocus: config.autofocus,
@@ -171,14 +298,30 @@ class IdentityField extends StatelessWidget {
   // ------------------------------------------------------------------ phone
 
   Widget _buildPhone(BuildContext context) {
+    // A phone number reads left-to-right in every locale. Left to inherit an
+    // RTL Directionality, the space-separated digit groups were reordered by
+    // the bidi algorithm, so the UAE number "50 123 4567" displayed as
+    // "4567 123 50". IntlPhoneField does not take a text direction, so the
+    // whole field is laid out LTR: country code first, as the number is
+    // written.
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: _phoneField(context),
+    );
+  }
+
+  Widget _phoneField(BuildContext context) {
     return IntlPhoneField(
       key: const ValueKey<String>('flutter_animated_login.identity.phone'),
       formFieldKey: config.formFieldKey,
       controller: controller.identifierController,
       phoneController: config.phoneController,
-      focusNode: config.focusNode,
-      initialCountryCode:
-          config.initialCountryCode ?? controller.countryIsoCode,
+      focusNode: _phoneFocus,
+      // The controller owns the country: a flow controller created by the
+      // widget starts from EmailPhoneTextFiledConfig.initialCountryCode, and
+      // one you pass starts from its own. Preferring the config here meant
+      // reset() could restore the controller's country but never the picker's.
+      initialCountryCode: controller.countryIsoCode,
       initialValue: config.initialValue,
       initialValueFormat: config.initialValueFormat,
       languageCode: config.languageCode,
@@ -241,6 +384,10 @@ class IdentityField extends StatelessWidget {
         searchHint: formMessages.searchCountry,
         invalidNumber: formMessages.invalidPhoneNumber,
         requiredNumber: formMessages.loginFieldEnterPhoneValidatorEmpty,
+        invalidCharacters: formMessages.digitsOnly,
+        noCountriesFound: formMessages.noCountriesFound,
+        countrySelectorLabel: formMessages.countrySelectorLabel,
+        favoritesLabel: formMessages.favoriteCountries,
       ),
       keyboardType: config.keyboardType ?? TextInputType.phone,
       textInputAction:

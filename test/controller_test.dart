@@ -351,11 +351,16 @@ void main() {
         reason: 'no number reported and the raw text is too short',
       );
 
-      // With no PhoneNumber reported yet the raw text is shape-checked, so a
-      // prefilled number does not leave the button disabled until the user
-      // touches the field.
+      // With no PhoneNumber reported yet the raw text is parsed against the
+      // selected country (India by default), so a prefilled number does not
+      // leave the button disabled until the user touches the field — but a
+      // number too short for that country does not pass either. This used to
+      // be a bare 4–15 digit shape check, which accepted "98765".
       controller.identifierController.text = '98765';
-      expect(controller.isFormValid, isTrue, reason: 'the raw text has shape');
+      expect(controller.isFormValid, isFalse, reason: 'too short for India');
+
+      controller.identifierController.text = '98765 43210';
+      expect(controller.isFormValid, isTrue, reason: 'a valid Indian number');
 
       controller.updatePhoneNumber(
         const PhoneNumber(

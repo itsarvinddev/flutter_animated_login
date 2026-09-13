@@ -45,16 +45,26 @@ enum LoginStep {
 /// @override
 /// Widget build(BuildContext context) => FlutterAnimatedLogin(
 ///       controller: controller,
-///       onLogin: (data) async {
-///         await api.sendOtp(data.name);
-///         controller.showOtp();   // advance once *your* send succeeded
-///         return null;
-///       },
+///       // Returning null advances to the code screen by itself; there is no
+///       // need to call showOtp here. Return a message to stay put instead.
+///       onLogin: (data) async => api.sendOtp(data.name),
 ///     );
+///
+/// // Elsewhere: react to things that happen outside the form.
+/// void onDeepLink(String email) => controller.prefill(identifier: email);
+/// void onSignedOut() => controller.reset();
 /// ```
+///
+/// Reach for [showOtp] when a code was sent some other way — a magic link that
+/// fell back to a code, or resuming a sign-in after the app was restarted.
 ///
 /// Passing a controller is optional: [FlutterAnimatedLogin] creates and
 /// disposes its own when you do not.
+///
+/// A controller you pass brings its own text controllers, so the `controller`
+/// fields of [EmailPhoneTextFiledConfig], [PasswordTextFiledConfig] and
+/// [OtpTextFiledConfig] are ignored. Hand yours to this constructor's
+/// `identifierController`, `passwordController` and `otpController` instead.
 ///
 /// The controller owns the flow's state — which screen is showing, what was
 /// typed, whether a submit is in flight. Because it is per-instance, two
@@ -77,6 +87,7 @@ class FlutterAnimatedLoginController extends ChangeNotifier {
     TextEditingController? otpController,
   }) : _step = initialStep,
        _countryIsoCode = initialCountryCode,
+       _initialCountryCode = initialCountryCode,
        _identifierController = identifierController ?? TextFieldController(),
        _passwordController = passwordController ?? TextFieldController(),
        _confirmPasswordController =
@@ -108,6 +119,7 @@ class FlutterAnimatedLoginController extends ChangeNotifier {
 
   LoginStep _step;
   String _countryIsoCode;
+  final String _initialCountryCode;
   PhoneNumber? _phoneNumber;
   bool _isPhone = false;
   bool _isBusy = false;
@@ -144,7 +156,8 @@ class FlutterAnimatedLoginController extends ChangeNotifier {
   String get countryIsoCode => _countryIsoCode;
 
   /// The phone number currently entered, or `null` in email mode.
-  PhoneNumber? get phoneNumber => _phoneNumber;
+  PhoneNumber? get phoneNumber =>
+      _phoneNumber ?? (_isPhone ? _parseTyped() : null);
 
   /// The identifier the callbacks receive: the email address as typed, or the
   /// phone number in E.164 form.
@@ -183,7 +196,32 @@ class FlutterAnimatedLoginController extends ChangeNotifier {
     if (number != null && number.number.isNotEmpty) {
       return number.isValidNumber();
     }
-    return _identifierController.text.trim().isIntlPhoneNumber;
+    return _parseTyped()?.isValidNumber() ?? false;
+  }
+
+  /// The number in the field, parsed against the selected country, for the
+  /// window before the phone field reports one.
+  ///
+  /// IntlPhoneField only reports a [PhoneNumber] when the user types. After
+  /// [prefill], or with an initial value, the controller used to fall back to
+  /// a bare-digits pattern — which rejected the brackets, spaces and dashes
+  /// that `formatInput` adds, so a valid "(201) 555-0123" left the submit
+  /// button disabled until the user touched the field.
+  PhoneNumber? _parseTyped() {
+    final text = _identifierController.text.trim();
+    if (text.isEmpty) return null;
+    if (text.startsWith('+')) {
+      final parsed = PhoneNumber.fromCompleteNumber(completeNumber: text);
+      return parsed.countryISOCode.isEmpty ? null : parsed;
+    }
+    final digits = text.replaceAll(RegExp(r'\D'), '');
+    final country = CountryResolver.instance.byIsoCode(_countryIsoCode);
+    if (digits.isEmpty || country == null) return null;
+    return PhoneNumber(
+      countryISOCode: country.code,
+      countryCode: '+${country.fullCountryCode}',
+      number: digits,
+    );
   }
 
   /// Where the one-time code was sent, shown on the verify screen. Falls back
@@ -255,6 +293,9 @@ class FlutterAnimatedLoginController extends ChangeNotifier {
       _phoneNumber = null;
       _isPhone = false;
       _acceptedTerms = false;
+      // Documented, but previously missing: without it the next person on a
+      // shared device saw the previous user's country.
+      _countryIsoCode = _initialCountryCode;
     }
     _safeNotify();
   }
@@ -383,7 +424,13 @@ class FlutterAnimatedLoginController extends ChangeNotifier {
   /// via [setIsPhone].
   void _syncFromIdentifierText() {
     final text = _identifierController.text.trim();
-    if (text.isEmpty) return;
+    // An emptied field goes back to email mode. Staying in phone mode trapped
+    // the user: the phone field filters out letters, so after typing a digit
+    // and deleting it, an email address could no longer be typed at all.
+    if (text.isEmpty) {
+      _isPhone = false;
+      return;
+    }
     _isPhone = !text.contains('@') && text.looksLikePhone;
   }
 

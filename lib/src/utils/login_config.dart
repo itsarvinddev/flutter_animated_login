@@ -65,7 +65,8 @@ class LoginConfig {
   /// Whether to show the link to the reset-password screen.
   ///
   /// Defaults to showing it whenever [FlutterAnimatedLogin.onResetPassword]
-  /// was supplied and the login type involves a password.
+  /// was supplied, for every login type — an app can sign people in with a
+  /// one-time code and still let them reset a password used elsewhere.
   final bool? showForgotLink;
 
   /// How the social login buttons are laid out.

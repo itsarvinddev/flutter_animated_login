@@ -207,7 +207,10 @@ class ConsentConfig {
   /// The text beside the checkbox. Use [Text.rich] for tappable links.
   final Widget label;
 
-  /// Whether the primary button stays disabled until the box is ticked.
+  /// Whether the primary button stays disabled until the box is ticked, on
+  /// the screens the checkbox is shown on ([showOnLogin], [showOnSignup]).
+  ///
+  /// A screen that does not show the checkbox is never gated by it.
   final bool isRequired;
 
   /// Whether the box starts ticked.

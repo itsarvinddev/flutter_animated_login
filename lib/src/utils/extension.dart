@@ -117,7 +117,10 @@ extension Tost on BuildContext {
   );
 
   /// Reports a failed action.
-  void error(String title, {String? description}) => _show(
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason>? error(
+    String title, {
+    String? description,
+  }) => _show(
     title,
     description,
     AnimatedLoginTheme.of(this).errorColor ??
@@ -143,7 +146,7 @@ extension Tost on BuildContext {
     Theme.of(this).colorScheme.onTertiaryContainer,
   );
 
-  void _show(
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason>? _show(
     String title,
     String? description,
     Color background,
@@ -159,49 +162,96 @@ extension Tost on BuildContext {
         );
         return true;
       }());
-      return;
+      return null;
     }
     final theme = Theme.of(this);
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Semantics(
-            liveRegion: true,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    color: foreground,
-                    fontWeight: FontWeight.w600,
-                  ),
+    messenger.hideCurrentSnackBar();
+    return messenger.showSnackBar(
+      SnackBar(
+        content: Semantics(
+          liveRegion: true,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: foreground,
+                  fontWeight: FontWeight.w600,
                 ),
-                if (description != null && description.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(
-                      description,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: foreground,
-                      ),
+              ),
+              if (description != null && description.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    description,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: foreground,
                     ),
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
-          backgroundColor: background,
-          closeIconColor: foreground,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
-          ),
-          behavior: SnackBarBehavior.floating,
-          showCloseIcon: true,
         ),
-      );
+        backgroundColor: background,
+        closeIconColor: foreground,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+        ),
+        behavior: SnackBarBehavior.floating,
+        showCloseIcon: true,
+      ),
+    );
   }
+}
+
+/// Shows a screen's errors and dismisses the last one once that screen
+/// succeeds.
+///
+/// Without this, entering a wrong code and then the right one left
+/// "That code is incorrect" on screen over the app's home page for up to four
+/// seconds. Only a SnackBar this tracker showed, and that is still open, is
+/// dismissed: a message the app shows from its own callback is left alone.
+class ScreenErrorSnackBar {
+  bool _open = false;
+
+  /// Shows [description] as an error.
+  void show(BuildContext context, String title, {String? description}) {
+    final controller = context.error(title, description: description);
+    if (controller == null) return;
+    _open = true;
+    controller.closed.whenComplete(() => _open = false);
+  }
+
+  /// Hides the error this tracker showed, if it is still on screen.
+  ///
+  /// Package errors are shown after hiding whatever was current and nothing
+  /// the package shows is queued ahead of them, so while one is open it is
+  /// the current SnackBar; anything the app showed later waits behind it.
+  void dismiss(BuildContext context) {
+    if (!_open) return;
+    _open = false;
+    ScaffoldMessenger.maybeOf(context)?.hideCurrentSnackBar();
+  }
+}
+
+/// Runs [reset] after a successful sign-in, unless the host has already moved
+/// on.
+///
+/// Hosts very often navigate to their home screen from inside onLogin or
+/// onVerify. Resetting immediately made the outgoing screen cross-fade back to
+/// an empty login form while the next route animated in. Declarative routers
+/// (go_router's `context.go`, an auth redirect) only swap routes on a later
+/// frame, so the check waits one frame and then skips the reset when this
+/// route is no longer the current one.
+void resetUnlessNavigatedAway(BuildContext context, VoidCallback reset) {
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!context.mounted) return;
+    final route = ModalRoute.of(context);
+    if (route != null && !route.isCurrent) return;
+    reset();
+  });
 }
 
 /// Cross-fades between the screens of the login flow.
@@ -243,18 +293,23 @@ class AnimatedStack extends StatelessWidget {
       switchInCurve: switchInCurve,
       switchOutCurve: switchOutCurve,
       transitionBuilder: transitionBuilder,
-      // Keep the outgoing screen out of the semantics tree and out of the
-      // enclosing Form while it fades away.
+      // Keep the outgoing screen out of focus, the semantics tree and hit
+      // testing while it fades away.
+      //
+      // Every child gets the same wrapper types, keyed like the child, with
+      // only the flags flipped. Wrapping just the outgoing screen changed the
+      // widget type in its slot, so Flutter could not update it in place: the
+      // whole screen was torn down and re-inflated mid-transition, re-running
+      // every initState. IntlPhoneField writes the shared text controller in
+      // its initState, which then notified the deactivated field it replaced
+      // ("Looking up a deactivated widget's ancestor is unsafe").
       layoutBuilder:
           (currentChild, previousChildren) => Stack(
             alignment: Alignment.center,
             children: <Widget>[
-              ...previousChildren.map(
-                (child) => ExcludeFocus(
-                  child: ExcludeSemantics(child: IgnorePointer(child: child)),
-                ),
-              ),
-              if (currentChild != null) currentChild,
+              for (final child in previousChildren)
+                _shield(child, active: false),
+              if (currentChild != null) _shield(currentChild, active: true),
             ],
           ),
       child: KeyedSubtree(
@@ -263,6 +318,15 @@ class AnimatedStack extends StatelessWidget {
       ),
     );
   }
+
+  static Widget _shield(Widget child, {required bool active}) => ExcludeFocus(
+    key: child.key,
+    excluding: !active,
+    child: ExcludeSemantics(
+      excluding: !active,
+      child: IgnorePointer(ignoring: !active, child: child),
+    ),
+  );
 }
 
 /// A [TextEditingController] that remembers whether it has been disposed.

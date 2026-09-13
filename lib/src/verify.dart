@@ -65,6 +65,7 @@ class FlutterAnimatedVerify extends StatefulWidget {
 }
 
 class _FlutterAnimatedVerifyState extends State<FlutterAnimatedVerify> {
+  final ScreenErrorSnackBar _errors = ScreenErrorSnackBar();
   Timer? _cooldownTimer;
   Duration _remaining = Duration.zero;
   bool _submitting = false;
@@ -79,7 +80,18 @@ class _FlutterAnimatedVerifyState extends State<FlutterAnimatedVerify> {
   /// 4-digit code never auto-submitted and an 8-digit one was truncated.
   int get _length => textConfig.length ?? 6;
 
-  String get _name => controller.otpSentTo;
+  /// Who the code is for, as the callbacks receive it: the identifier in
+  /// E.164 or as typed. [FlutterAnimatedLoginController.showOtp]'s `sentTo`
+  /// is a display label, so it is used only when nothing was entered — a code
+  /// sent out of band, say. Before, a label such as "+1 201-555-0123" reached
+  /// onVerify as LoginData.name instead of "+12015550123".
+  String get _name {
+    final identifier = controller.identifier;
+    return identifier.isNotEmpty ? identifier : controller.otpSentTo;
+  }
+
+  /// What the subtitle shows.
+  String get _sentToLabel => controller.otpSentTo;
 
   bool get _cooldownActive => _remaining > Duration.zero;
 
@@ -152,10 +164,11 @@ class _FlutterAnimatedVerifyState extends State<FlutterAnimatedVerify> {
       // controller or the context afterwards used to throw.
       if (!mounted) return;
       if (result.isNotEmptyOrNull) {
-        context.error(messages.errorTitle, description: result);
+        _errors.show(context, messages.errorTitle, description: result);
         controller.clearOtp();
       } else {
-        controller.reset();
+        _errors.dismiss(context);
+        resetUnlessNavigatedAway(context, controller.reset);
       }
     } finally {
       _submitting = false;
@@ -168,11 +181,12 @@ class _FlutterAnimatedVerifyState extends State<FlutterAnimatedVerify> {
         name: _name,
         method: LoginMethod.otp,
         phoneNumber: controller.isPhone ? controller.phoneNumber : null,
+        acceptedTerms: controller.acceptedTerms,
       ),
     );
     if (!mounted) return;
     if (result.isNotEmptyOrNull) {
-      context.error(messages.errorTitle, description: result);
+      _errors.show(context, messages.errorTitle, description: result);
       return;
     }
     controller.recordResend();
@@ -209,7 +223,7 @@ class _FlutterAnimatedVerifyState extends State<FlutterAnimatedVerify> {
     final textTheme = theme.textTheme;
     final loginTheme = AnimatedLoginTheme.of(context);
     final defaultPinTheme = _defaultPinTheme(context);
-    final isEmail = _name.isEmail;
+    final isEmail = _sentToLabel.isEmail || _name.isEmail;
 
     return PageWidget(
       config: widget.pageConfig,
@@ -225,9 +239,15 @@ class _FlutterAnimatedVerifyState extends State<FlutterAnimatedVerify> {
                         (isEmail
                             ? messages.otpSentToEmail
                             : messages.otpSentToPhone),
-                    titleStyle: textTheme.titleLarge,
-                    subtitle: config.subtitle ?? _name,
-                    subtitleStyle: textTheme.titleMedium,
+                    titleStyle:
+                        AnimatedLoginTheme.of(context).titleStyle ??
+                        textTheme.titleLarge,
+                    // Isolated left-to-right: in an RTL layout "+971501234567" otherwise
+                    // drew its "+" after the digits.
+                    subtitle: config.subtitle ?? '\u2066$_sentToLabel\u2069',
+                    subtitleStyle:
+                        AnimatedLoginTheme.of(context).subtitleStyle ??
+                        textTheme.titleMedium,
                     titleGap: const SizedBox(height: 6),
                     actionLabel: messages.edit,
                     onTap: () => controller.goTo(LoginStep.login),
@@ -245,19 +265,19 @@ class _FlutterAnimatedVerifyState extends State<FlutterAnimatedVerify> {
                       textConfig.autofillHints ??
                       const <String>[AutofillHints.oneTimeCode],
                   focusedPinTheme:
-                      loginTheme.focusedPinTheme ??
                       textConfig.focusedPinTheme ??
+                      loginTheme.focusedPinTheme ??
                       defaultPinTheme.copyWith(
                         decoration: defaultPinTheme.decoration?.copyWith(
                           border: Border.all(color: theme.colorScheme.primary),
                         ),
                       ),
                   submittedPinTheme:
-                      loginTheme.submittedPinTheme ??
-                      textConfig.submittedPinTheme,
+                      textConfig.submittedPinTheme ??
+                      loginTheme.submittedPinTheme,
                   errorPinTheme:
-                      loginTheme.errorPinTheme ??
                       textConfig.errorPinTheme ??
+                      loginTheme.errorPinTheme ??
                       defaultPinTheme.copyWith(
                         decoration: BoxDecoration(
                           color: theme.colorScheme.errorContainer,
@@ -355,6 +375,10 @@ class _FlutterAnimatedVerifyState extends State<FlutterAnimatedVerify> {
   }
 
   Widget _buildResend(BuildContext context, TextTheme textTheme) {
+    // Without onResendOtp there is nothing to resend with. The button used to
+    // show anyway, and a tap restarted the countdown as though a new code were
+    // on its way.
+    if (widget.onResendOtp == null) return const SizedBox.shrink();
     final theme = Theme.of(context);
 
     if (_resendExhausted) {
@@ -386,7 +410,10 @@ class _FlutterAnimatedVerifyState extends State<FlutterAnimatedVerify> {
         variant: AutoLoadingButtonVariant.text,
         style: TextButton.styleFrom(
           minimumSize: const Size.fromHeight(48),
-          textStyle: config.buttonTextStyle ?? textTheme.titleMedium,
+          textStyle:
+              config.buttonTextStyle ??
+              AnimatedLoginTheme.of(context).linkStyle ??
+              textTheme.titleMedium,
         ),
         onPressed: _resend,
         child: config.resendButton ?? Text(messages.resendOTP),

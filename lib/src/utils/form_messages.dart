@@ -149,6 +149,24 @@ class FormMessages {
   /// Hint of the country picker's search field.
   final String searchCountry;
 
+  /// Shown in the country picker when a search matches nothing.
+  final String noCountriesFound;
+
+  /// Heading above the favourite countries in the country picker.
+  final String favoriteCountries;
+
+  /// Screen-reader label of the country selector. `{country}` is replaced with
+  /// the selected country's name.
+  final String countrySelectorLabel;
+
+  /// Shown when the phone field contains something other than digits.
+  final String digitsOnly;
+
+  /// Shown under a required [SignupField] left empty, unless it sets its own
+  /// [SignupField.requiredMessage]. `{label}` is replaced with the field's
+  /// label.
+  final String fieldRequired;
+
   // -------------------------------------------------------------------- otp
 
   /// Label of the button that requests a new one-time code.
@@ -251,6 +269,11 @@ class FormMessages {
     this.invalidEmail = 'Please enter a valid email address',
     this.invalidPhoneNumber = 'Please enter a valid phone number',
     this.searchCountry = 'Search country',
+    this.noCountriesFound = 'No countries found',
+    this.favoriteCountries = 'Frequently used',
+    this.countrySelectorLabel = 'Selected country: {country}. Tap to change.',
+    this.digitsOnly = 'Please enter digits only',
+    this.fieldRequired = '{label} is required',
     this.resendOTP = 'Resend OTP',
     this.otpSentToEmail = 'Enter OTP sent to your email',
     this.otpSentToPhone = 'Enter OTP sent to your phone',
@@ -273,6 +296,10 @@ class FormMessages {
 
   /// English defaults.
   static const FormMessages fallback = FormMessages();
+
+  /// [fieldRequired] with `{label}` replaced by [label].
+  String fieldRequiredFor(String label) =>
+      fieldRequired.replaceAll('{label}', label);
 
   /// [passwordTooShort] with `{min}` replaced by [min].
   String passwordTooShortFor(int min) =>
@@ -322,6 +349,11 @@ class FormMessages {
     String? invalidEmail,
     String? invalidPhoneNumber,
     String? searchCountry,
+    String? noCountriesFound,
+    String? favoriteCountries,
+    String? countrySelectorLabel,
+    String? digitsOnly,
+    String? fieldRequired,
     String? resendOTP,
     String? otpSentToEmail,
     String? otpSentToPhone,
@@ -386,6 +418,11 @@ class FormMessages {
       invalidEmail: invalidEmail ?? this.invalidEmail,
       invalidPhoneNumber: invalidPhoneNumber ?? this.invalidPhoneNumber,
       searchCountry: searchCountry ?? this.searchCountry,
+      noCountriesFound: noCountriesFound ?? this.noCountriesFound,
+      favoriteCountries: favoriteCountries ?? this.favoriteCountries,
+      countrySelectorLabel: countrySelectorLabel ?? this.countrySelectorLabel,
+      digitsOnly: digitsOnly ?? this.digitsOnly,
+      fieldRequired: fieldRequired ?? this.fieldRequired,
       resendOTP: resendOTP ?? this.resendOTP,
       otpSentToEmail: otpSentToEmail ?? this.otpSentToEmail,
       otpSentToPhone: otpSentToPhone ?? this.otpSentToPhone,

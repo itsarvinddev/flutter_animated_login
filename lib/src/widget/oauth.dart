@@ -177,8 +177,13 @@ class _IconProviderButton extends StatelessWidget {
                       minimumSize: const Size.square(48),
                       backgroundColor: provider.backgroundColor,
                       foregroundColor: provider.foregroundColor,
+                      // The button is disabled while its callback runs. Without
+                      // these a branded button turned Material grey for the
+                      // whole sign-in, which brand guidelines do not allow.
+                      disabledBackgroundColor: provider.backgroundColor,
+                      disabledForegroundColor: provider.foregroundColor,
                     ),
-                loadingColor: provider.loadingColor,
+                loadingColor: provider.loadingColor ?? provider.foregroundColor,
                 loading: provider.loading,
                 child: icon,
               ),
@@ -233,8 +238,10 @@ class _FullWidthProviderButton extends StatelessWidget {
                   minimumSize: const Size.fromHeight(48),
                   backgroundColor: provider.backgroundColor,
                   foregroundColor: provider.foregroundColor,
+                  disabledBackgroundColor: provider.backgroundColor,
+                  disabledForegroundColor: provider.foregroundColor,
                 ),
-            loadingColor: provider.loadingColor,
+            loadingColor: provider.loadingColor ?? provider.foregroundColor,
             loading: provider.loading,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,

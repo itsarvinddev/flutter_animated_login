@@ -61,6 +61,8 @@ void main() {
       await _pumpVerify(
         tester,
         config: const VerifyConfig(resendCooldown: Duration(seconds: 2)),
+        // Resend is offered only when there is a callback to resend with.
+        onResendOtp: (_) async => null,
       );
 
       // Counting down: a label, not a button, so there is nothing to tap.
@@ -91,6 +93,7 @@ void main() {
       await _pumpVerify(
         tester,
         config: const VerifyConfig(startCooldownOnOpen: false),
+        onResendOtp: (_) async => null,
       );
 
       expect(find.textContaining('Resend OTP ('), findsNothing);

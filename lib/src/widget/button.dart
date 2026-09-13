@@ -181,7 +181,11 @@ class LoginMethodToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextButton(
       onPressed: () => controller.setUseOtp(!controller.useOtp),
-      style: TextButton.styleFrom(textStyle: textStyle),
+      style:
+          AnimatedLoginTheme.of(context).secondaryButtonStyle ??
+          TextButton.styleFrom(
+            textStyle: textStyle ?? AnimatedLoginTheme.of(context).linkStyle,
+          ),
       child: Text(
         controller.useOtp
             ? messages.usePasswordInstead

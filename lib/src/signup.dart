@@ -1,4 +1,7 @@
+import 'dart:collection';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
 import '../flutter_animated_login.dart';
@@ -58,7 +61,23 @@ class FlutterAnimatedSignup extends StatefulWidget {
 
 class _FlutterAnimatedSignupState extends State<FlutterAnimatedSignup> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final Map<String, String> _customValues = <String, String>{};
+  final ScreenErrorSnackBar _errors = ScreenErrorSnackBar();
+
+  // Rebuilds this screen whenever a custom field writes to it. It used to be a
+  // plain map: writing to it rebuilt nothing, so the documented checkbox or
+  // switch pattern never redrew when tapped.
+  late final Map<String, String> _customValues = _RebuildingMap(() {
+    if (!mounted) return;
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    if (phase == SchedulerPhase.persistentCallbacks) {
+      // Written from inside a builder during build: rebuild next frame.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() {});
+      });
+    } else {
+      setState(() {});
+    }
+  });
 
   FlutterAnimatedLoginController get controller => widget.controller;
   SignupConfig get config => widget.config;
@@ -85,14 +104,19 @@ class _FlutterAnimatedSignupState extends State<FlutterAnimatedSignup> {
     if ((consent?.isRequired ?? false) &&
         (consent?.showOnSignup ?? true) &&
         !controller.acceptedTerms) {
-      context.error(
+      _errors.show(
+        context,
         messages.errorTitle,
         description: consent?.errorText ?? messages.consentRequired,
       );
       return null;
     }
     if (!(_formKey.currentState?.validate() ?? false)) {
-      context.error(messages.errorTitle, description: messages.invalidFormData);
+      _errors.show(
+        context,
+        messages.errorTitle,
+        description: messages.invalidFormData,
+      );
       return null;
     }
     _formKey.currentState?.save();
@@ -122,18 +146,21 @@ class _FlutterAnimatedSignupState extends State<FlutterAnimatedSignup> {
       );
       if (!mounted) return null;
       if (result.isNotEmptyOrNull) {
-        context.error(messages.errorTitle, description: result);
+        _errors.show(context, messages.errorTitle, description: result);
         return result;
       }
       TextInput.finishAutofillContext();
-      if (config.loginAfterSignUp) {
-        // Keep what was typed so the user can sign straight in. Authenticating
-        // is your own onSignup's job — the package has no session to create.
-        controller.goTo(LoginStep.login);
-      } else {
-        _formKey.currentState?.reset();
-        controller.reset();
-      }
+      _errors.dismiss(context);
+      resetUnlessNavigatedAway(context, () {
+        if (config.loginAfterSignUp) {
+          // Keep what was typed so the user can sign straight in.
+          // Authenticating is your own onSignup's job.
+          controller.goTo(LoginStep.login);
+        } else {
+          _formKey.currentState?.reset();
+          controller.reset();
+        }
+      });
       return null;
     } finally {
       controller.setBusy(false);
@@ -182,9 +209,13 @@ class _FlutterAnimatedSignupState extends State<FlutterAnimatedSignup> {
                       config.titleWidget ??
                       TitleWidget(
                         title: config.title ?? messages.signUp,
-                        titleStyle: textTheme.titleLarge,
+                        titleStyle:
+                            AnimatedLoginTheme.of(context).titleStyle ??
+                            textTheme.titleLarge,
                         subtitle: config.subtitle ?? messages.createAccountLong,
-                        subtitleStyle: textTheme.titleMedium,
+                        subtitleStyle:
+                            AnimatedLoginTheme.of(context).subtitleStyle ??
+                            textTheme.titleMedium,
                         titleGap: const SizedBox(height: 6),
                         child: config.logo,
                       ),
@@ -267,6 +298,7 @@ class _FlutterAnimatedSignupState extends State<FlutterAnimatedSignup> {
                     if (field.header != null) field.header!,
                     _AdditionalField(
                       field: field,
+                      messages: messages,
                       controller: controller.additionalFieldController(
                         field.key,
                       ),
@@ -295,11 +327,15 @@ class _FlutterAnimatedSignupState extends State<FlutterAnimatedSignup> {
                   ActionButtonBox(
                     child: TextButton(
                       onPressed: () => controller.goTo(LoginStep.login),
-                      style: TextButton.styleFrom(
-                        textStyle:
-                            config.buttonTextStyle ?? textTheme.titleMedium,
-                        minimumSize: const Size.fromHeight(48),
-                      ),
+                      style:
+                          AnimatedLoginTheme.of(context).secondaryButtonStyle ??
+                          TextButton.styleFrom(
+                            textStyle:
+                                config.buttonTextStyle ??
+                                AnimatedLoginTheme.of(context).linkStyle ??
+                                textTheme.titleMedium,
+                            minimumSize: const Size.fromHeight(48),
+                          ),
                       child: Text(messages.signIn),
                     ),
                   ),
@@ -326,6 +362,7 @@ class _FlutterAnimatedSignupState extends State<FlutterAnimatedSignup> {
 class _AdditionalField extends StatelessWidget {
   const _AdditionalField({
     required this.field,
+    required this.messages,
     required this.controller,
     required this.radius,
     required this.isLast,
@@ -333,6 +370,7 @@ class _AdditionalField extends StatelessWidget {
   });
 
   final SignupField field;
+  final FormMessages messages;
   final TextEditingController controller;
   final BorderRadius radius;
   final bool isLast;
@@ -359,7 +397,13 @@ class _AdditionalField extends StatelessWidget {
           field.textInputAction ??
           (isLast ? TextInputAction.done : TextInputAction.next),
       onFieldSubmitted: isLast ? onSubmitted : null,
-      validator: field.validate,
+      validator: (value) {
+        if (field.isRequired && (value == null || value.trim().isEmpty)) {
+          return field.requiredMessage ??
+              messages.fieldRequiredFor(field.label ?? field.key);
+        }
+        return field.validator?.call(value);
+      },
       decoration:
           field.decoration ??
           InputDecoration(
@@ -369,5 +413,40 @@ class _AdditionalField extends StatelessWidget {
             counter: field.maxLength == null ? const SizedBox.shrink() : null,
           ),
     );
+  }
+}
+
+/// A map that reports every write, so custom signup fields can redraw.
+class _RebuildingMap extends MapBase<String, String> {
+  _RebuildingMap(this._onChanged);
+
+  final VoidCallback _onChanged;
+  final Map<String, String> _values = <String, String>{};
+
+  @override
+  String? operator [](Object? key) => _values[key];
+
+  @override
+  void operator []=(String key, String value) {
+    if (_values[key] == value) return;
+    _values[key] = value;
+    _onChanged();
+  }
+
+  @override
+  void clear() {
+    if (_values.isEmpty) return;
+    _values.clear();
+    _onChanged();
+  }
+
+  @override
+  Iterable<String> get keys => _values.keys;
+
+  @override
+  String? remove(Object? key) {
+    final removed = _values.remove(key);
+    if (removed != null) _onChanged();
+    return removed;
   }
 }

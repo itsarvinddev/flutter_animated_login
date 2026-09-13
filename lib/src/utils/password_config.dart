@@ -336,9 +336,14 @@ class PasswordTextFiledConfig {
     this.contentInsertionConfiguration,
     this.statesController,
     this.clipBehavior = Clip.hardEdge,
-    this.stylusHandwritingEnabled = true,
+    bool stylusHandwritingEnabled = true,
+    @Deprecated(
+      'Renamed to stylusHandwritingEnabled, matching Flutter 3.29. '
+      'Removed in 2.0.0.',
+    )
+    bool? scribbleEnabled,
     this.canRequestFocus = true,
-  });
+  }) : stylusHandwritingEnabled = scribbleEnabled ?? stylusHandwritingEnabled;
 
   /// A copy of this configuration with the given properties replaced.
   PasswordTextFiledConfig copyWith({

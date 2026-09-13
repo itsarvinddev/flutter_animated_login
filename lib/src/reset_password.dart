@@ -42,6 +42,7 @@ class FlutterAnimatedReset extends StatefulWidget {
 }
 
 class _FlutterAnimatedResetState extends State<FlutterAnimatedReset> {
+  final ScreenErrorSnackBar _errors = ScreenErrorSnackBar();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   FlutterAnimatedLoginController get controller => widget.controller;
@@ -49,7 +50,11 @@ class _FlutterAnimatedResetState extends State<FlutterAnimatedReset> {
 
   Future<String?> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
-      context.error(messages.errorTitle, description: messages.invalidFormData);
+      _errors.show(
+        context,
+        messages.errorTitle,
+        description: messages.invalidFormData,
+      );
       return null;
     }
     _formKey.currentState?.save();
@@ -62,16 +67,19 @@ class _FlutterAnimatedResetState extends State<FlutterAnimatedReset> {
       final result = await onResetPassword(controller.identifier);
       if (!mounted) return null;
       if (result.isNotEmptyOrNull) {
-        context.error(messages.errorTitle, description: result);
+        _errors.show(context, messages.errorTitle, description: result);
         return result;
       }
+      // context.success replaces any error still on screen.
       context.success(
         messages.successTitle,
         description: messages.resetLinkSent,
       );
       if (widget.config.returnToLoginOnSuccess) {
-        _formKey.currentState?.reset();
-        controller.reset();
+        resetUnlessNavigatedAway(context, () {
+          _formKey.currentState?.reset();
+          controller.reset();
+        });
       }
       return null;
     } finally {
@@ -109,9 +117,13 @@ class _FlutterAnimatedResetState extends State<FlutterAnimatedReset> {
                       config.titleWidget ??
                       TitleWidget(
                         title: config.title ?? messages.resetTitle,
-                        titleStyle: textTheme.titleLarge,
+                        titleStyle:
+                            AnimatedLoginTheme.of(context).titleStyle ??
+                            textTheme.titleLarge,
                         subtitle: config.subtitle ?? messages.resetSubtitle,
-                        subtitleStyle: textTheme.titleMedium,
+                        subtitleStyle:
+                            AnimatedLoginTheme.of(context).subtitleStyle ??
+                            textTheme.titleMedium,
                         titleGap: const SizedBox(height: 6),
                         child: config.logo,
                       ),
@@ -135,11 +147,15 @@ class _FlutterAnimatedResetState extends State<FlutterAnimatedReset> {
                   ActionButtonBox(
                     child: TextButton(
                       onPressed: () => controller.goTo(LoginStep.login),
-                      style: TextButton.styleFrom(
-                        textStyle:
-                            config.buttonTextStyle ?? textTheme.titleMedium,
-                        minimumSize: const Size.fromHeight(48),
-                      ),
+                      style:
+                          AnimatedLoginTheme.of(context).secondaryButtonStyle ??
+                          TextButton.styleFrom(
+                            textStyle:
+                                config.buttonTextStyle ??
+                                AnimatedLoginTheme.of(context).linkStyle ??
+                                textTheme.titleMedium,
+                            minimumSize: const Size.fromHeight(48),
+                          ),
                       child: Text(messages.signIn),
                     ),
                   ),
