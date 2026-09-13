@@ -1,25 +1,43 @@
+name: Build & Release
+
+# Deploys the live demo at https://itsarvinddev.github.io/flutter_animated_login/.
+#
+# This used to run on every `pull_request`, which published whatever a pull
+# request happened to contain straight to the public demo -- including from
+# forks. It also listed `master` and `develop`, neither of which exists here.
+# Now only a push to the default branch deploys, plus a manual run.
 on:
-  pull_request:
-    branches:
-      - main
-      - master
   push:
-    branches:
-      - main
-      - master
-      - develop
-name: "Build & Release"
+    branches: [main]
+  workflow_dispatch:
+
+# Two deploys racing each other onto gh-pages leaves the site in whichever
+# state finishes last, so let the newer one win and do not cancel a deploy
+# that is already pushing.
+concurrency:
+  group: gh-pages
+  cancel-in-progress: false
+
+permissions:
+  contents: write
 
 jobs:
   build:
     name: Build & Release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
         with:
-          channel: "stable"
-      - run: flutter pub get
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+        working-directory: ./example
 
       - name: Build Web Project
         run: flutter build web --release --base-href /flutter_animated_login/
@@ -32,6 +50,9 @@ jobs:
       - name: Deploy web To GH-Page
         uses: peaceiris/actions-gh-pages@v3
         with:
+          # PERSONAL_TOKEN is configured on this repository. GitHub Pages is
+          # set to the legacy gh-pages branch source, which this action
+          # publishes to.
           personal_token: ${{ secrets.PERSONAL_TOKEN }}
           publish_branch: gh-pages
           publish_dir: ./example/build/web

@@ -1,25 +1,221 @@
 name: CI
 
+# The default branch is `main`. This workflow used to trigger on pushes to
+# `master`, a branch that has never existed in this repository, so the push
+# trigger could never fire -- the Actions API reported `total_count: 0` runs
+# across every workflow before this change.
 on:
   pull_request:
-    branches: '*'
+    branches: [main]
   push:
-    branches: [master]
+    branches: [main]
+  workflow_dispatch:
+
+# A new push to a branch makes the run already in flight pointless.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
-  ci:
+  test:
+    name: Flutter ${{ matrix.label }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # `stable` is a CHANNEL, not a version, so it belongs in `channel:`.
+          # Leaving `flutter-version` empty is how subosito/flutter-action is
+          # told "newest release on this channel" -- its setup.sh turns an
+          # empty version into `any`. Putting the word `stable` into
+          # `flutter-version` would look for a release literally named
+          # "stable" and fail to resolve.
+          - label: stable
+            channel: stable
+            flutter-version: ""
+            coverage: true
+          # The floor that pubspec.yaml declares (`flutter: ">=3.29.0"`,
+          # `sdk: ">=3.7.0"`). Pinning it is the only thing that keeps the
+          # declared floor honest, and it has already earned its place: the
+          # first run of this leg caught three symbols the modern SDK hides --
+          # stylusHandwritingEnabled, TapRegionUpCallback and `internal` via
+          # flutter/foundation -- none of which existed at the 3.27 the pubspec
+          # then advertised.
+          #
+          # flutter_lints stays a range rather than `^6.0.0`: 6.x needs Dart
+          # 3.8 (Flutter 3.32), above this floor. It resolves to 5.x here and
+          # 6.x on the newest stable. Consumers never resolve
+          # dev_dependencies, but the leg has to be installable to be useful.
+          - label: 3.29.0 (declared floor)
+            channel: stable
+            flutter-version: 3.29.0
+            coverage: false
+
     steps:
-      - uses: actions/checkout@v3
-      - uses: subosito/flutter-action@v2
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: ${{ matrix.channel }}
+          flutter-version: ${{ matrix.flutter-version }}
+          cache: true
+
+      - name: Report toolchain
+        run: flutter --version
+
       - name: Install dependencies
         run: flutter pub get
-      - name: Format code
-        run: dart format --line-length 120 --set-exit-if-changed .
-      - name: Analyze code
+
+      - name: Check formatting
+        # The package is formatted at `dart format`'s default 80 columns. The
+        # previous `--line-length 120` rewrote 27 of 32 files, so this step
+        # could only ever fail. Passing no --line-length asserts the default.
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze package
+        # Deliberately strict -- no `--no-fatal-infos`. lib/ and test/ produce
+        # zero analyzer output today, so an info-level lint here is a real
+        # regression and not pre-existing noise to be waved through.
+        #
+        # Scoped to lib/ and test/ on purpose: a bare `flutter analyze` from
+        # the repository root also walks example/, which the `example` job
+        # below analyses properly, against the example's own pubspec and
+        # analysis_options.
+        run: flutter analyze lib test
+
+      - name: Run tests
+        if: ${{ !matrix.coverage }}
+        run: flutter test
+
+      - name: Run tests with coverage
+        # Coverage on a single leg: the two legs run the same suite, so
+        # collecting it twice buys nothing.
+        if: ${{ matrix.coverage }}
+        run: flutter test --coverage
+
+      - name: Upload coverage
+        # Kept as a build artifact rather than pushed to a coverage service:
+        # this repository has no coverage-service token configured, and a step
+        # that silently no-ops without its secret is worse than no step.
+        if: ${{ matrix.coverage }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-lcov
+          path: coverage/lcov.info
+          if-no-files-found: error
+
+  example:
+    name: Example app
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+        working-directory: example
+
+      - name: Analyze example
+        # Strict here too. The example was the one place that still produced
+        # analyzer output (an `avoid_print` in the demo), which is why the old
+        # CI needed `--no-fatal-infos`; it is clean as of 1.0.0, so there is
+        # nothing left to excuse. If a demo ever does need to print, add a
+        # scoped `// ignore: avoid_print` rather than reopening this gate for
+        # the whole example.
         run: flutter analyze
-      # Skip tests for now
-      # - name: Run tests
-      #   run: flutter test
+        working-directory: example
+
+      - name: Test example
+        run: flutter test
+        working-directory: example
+
+  score:
+    name: Publish dry-run and pana score
+    runs-on: ubuntu-latest
+    env:
+      # Minimum pana score the package must keep. Measured 150/160 with pana
+      # 0.23.19 on 2026-09-12; the 10 missing points are "Failed to verify
+      # repository URL", which resolves itself once a pubspec.yaml carrying
+      # the corrected `repository:` field is on the default branch. Raise this
+      # to 160 after v1.0.0 lands on main so the full score is defended.
+      MIN_PANA_SCORE: "150"
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        # Flutter, not dart-lang/setup-dart: pana and `pub publish` both have
+        # to resolve `flutter`/`flutter_test` from the SDK, which a standalone
+        # Dart SDK cannot provide. flutter-action puts `dart` on PATH too.
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Publish dry run
+        # Exits 0 only when the package has zero warnings, so this catches a
+        # broken pubspec, a missing licence and an oversized archive before a
+        # tag is ever cut.
+        run: dart pub publish --dry-run
+
+      - name: Install screenshot tooling
+        # pana validates the images named in `screenshots:` by shelling out to
+        # the libwebp tools -- webpinfo, cwebp, dwebp, gif2webp and webpmux
+        # (see pana's lib/src/tool/webp_tool.dart). None of them is on a bare
+        # ubuntu runner, so without this every screenshot is reported as
+        # "No such file or directory", the "Provide documentation" section
+        # scores 0/10, and the score gate fails for code that is fine.
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq webp libwebp-dev
+          # Fail loudly here rather than as a confusing pana result later.
+          for tool in webpinfo cwebp dwebp gif2webp webpmux; do
+            command -v "$tool" >/dev/null || { echo "missing: $tool"; exit 1; }
+          done
+
+      - name: Install pana
+        run: dart pub global activate pana
+
+      - name: Score with pana
+        run: |
+          set -euo pipefail
+          dart pub global run pana --no-warning --json . > pana.json
+
+          granted=$(jq -r '.scores.grantedPoints' pana.json)
+          max=$(jq -r '.scores.maxPoints' pana.json)
+
+          echo "pana score: $granted / $max (gate: >= $MIN_PANA_SCORE)"
+          jq -r '.report.sections[]
+                 | "  \(.grantedPoints)/\(.maxPoints)  \(.title)"' pana.json
+
+          {
+            echo "### pana score: $granted / $max"
+            echo
+            echo "Gate: >= $MIN_PANA_SCORE"
+            echo
+            jq -r '.report.sections[]
+                   | "- \(.grantedPoints)/\(.maxPoints) \(.title)"' pana.json
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$granted" -lt "$MIN_PANA_SCORE" ]; then
+            echo "::error::pana score $granted/$max is below the gate of $MIN_PANA_SCORE"
+            echo "Sections that lost points:"
+            jq -r '.report.sections[]
+                   | select(.grantedPoints < .maxPoints)
+                   | .summary' pana.json
+            exit 1
+          fi

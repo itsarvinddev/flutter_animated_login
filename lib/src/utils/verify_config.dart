@@ -3,17 +3,70 @@ import 'package:flutter/services.dart';
 
 import '../../flutter_animated_login.dart';
 
+/// Everything about the one-time-code screen.
+@immutable
 class VerifyConfig {
+  /// Shown above the title.
   final Widget? logo;
+
+  /// Replaces the whole title block.
   final Widget? header;
+
+  /// Rendered at the very bottom of the screen.
   final Widget? footer;
+
+  /// The screen's title. Defaults to [FormMessages.otpSentToEmail] or
+  /// [FormMessages.otpSentToPhone], whichever matches the identifier.
   final String? title;
+
+  /// The screen's subtitle. Defaults to where the code was sent.
   final String? subtitle;
+
+  /// Replaces the generated [TitleWidget].
   final TitleWidget? titleWidget;
+
+  /// The label inside the resend button. Defaults to
+  /// [FormMessages.resendOTP].
   final Widget? resendButton;
+
+  /// The style of the resend button's label.
   final TextStyle? buttonTextStyle;
+
+  /// Configures the code field.
   final OtpTextFiledConfig textFiledConfig;
 
+  /// How long the user must wait before another code can be requested.
+  ///
+  /// Before 1.0.0 this was hardcoded to 60 seconds, which no backend with a
+  /// different rate limit could match.
+  final Duration resendCooldown;
+
+  /// Whether the countdown starts as soon as the screen opens.
+  ///
+  /// Set false when your first code is sent by some other route, so the resend
+  /// button is available immediately.
+  final bool startCooldownOnOpen;
+
+  /// How many times the user may request a new code. `0` means no limit.
+  ///
+  /// Once reached, the resend button is replaced by
+  /// [FormMessages.resendLimitReached].
+  final int maxResendAttempts;
+
+  /// Renders the countdown. Receives the time still to wait.
+  final Widget Function(BuildContext context, Duration remaining)?
+  countdownBuilder;
+
+  /// Called when the countdown reaches zero.
+  final VoidCallback? onCooldownFinished;
+
+  /// Whether filling the last cell submits the code automatically.
+  final bool autoSubmitOnFill;
+
+  /// Whether to show the social login buttons and terms text on this screen.
+  final bool showProviders;
+
+  /// Creates the verify screen's configuration.
   const VerifyConfig({
     this.logo,
     this.header,
@@ -24,8 +77,16 @@ class VerifyConfig {
     this.resendButton,
     this.buttonTextStyle,
     this.textFiledConfig = const OtpTextFiledConfig(),
+    this.resendCooldown = const Duration(seconds: 60),
+    this.startCooldownOnOpen = true,
+    this.maxResendAttempts = 0,
+    this.countdownBuilder,
+    this.onCooldownFinished,
+    this.autoSubmitOnFill = true,
+    this.showProviders = true,
   });
 
+  /// A copy of this configuration with the given properties replaced.
   VerifyConfig copyWith({
     Widget? logo,
     Widget? header,
@@ -36,6 +97,13 @@ class VerifyConfig {
     Widget? resendButton,
     TextStyle? buttonTextStyle,
     OtpTextFiledConfig? textFiledConfig,
+    Duration? resendCooldown,
+    bool? startCooldownOnOpen,
+    int? maxResendAttempts,
+    Widget Function(BuildContext, Duration)? countdownBuilder,
+    VoidCallback? onCooldownFinished,
+    bool? autoSubmitOnFill,
+    bool? showProviders,
   }) {
     return VerifyConfig(
       logo: logo ?? this.logo,
@@ -47,10 +115,20 @@ class VerifyConfig {
       resendButton: resendButton ?? this.resendButton,
       buttonTextStyle: buttonTextStyle ?? this.buttonTextStyle,
       textFiledConfig: textFiledConfig ?? this.textFiledConfig,
+      resendCooldown: resendCooldown ?? this.resendCooldown,
+      startCooldownOnOpen: startCooldownOnOpen ?? this.startCooldownOnOpen,
+      maxResendAttempts: maxResendAttempts ?? this.maxResendAttempts,
+      countdownBuilder: countdownBuilder ?? this.countdownBuilder,
+      onCooldownFinished: onCooldownFinished ?? this.onCooldownFinished,
+      autoSubmitOnFill: autoSubmitOnFill ?? this.autoSubmitOnFill,
+      showProviders: showProviders ?? this.showProviders,
     );
   }
 }
 
+/// Everything about the one-time-code field: the [Pinput] parameters it
+/// forwards, plus this package's own callbacks and semantics.
+@immutable
 class OtpTextFiledConfig {
   /// Theme of the pin in default state
   final PinTheme? defaultPinTheme;
@@ -101,7 +179,7 @@ class OtpTextFiledConfig {
   ///     super.dispose();
   ///   }
   /// ```
-  final TextFieldController? controller;
+  final TextEditingController? controller;
 
   /// Defines the keyboard focus for this
   /// To give the keyboard focus to this widget, provide a [focusNode] and then
@@ -276,8 +354,29 @@ class OtpTextFiledConfig {
   /// This is useful if you want to unfocus the [Pinput] when user taps outside of it
   final TapRegionCallback? onTapOutside;
 
+  /// Supplies the code from an SMS listener.
+  ///
+  /// The package takes no SMS-reading dependency. Add `smart_auth` (or any
+  /// other retriever) to your own app and implement pinput's `SmsRetriever`.
   final SmsRetriever? smsRetriever;
 
+  /// Called when a pointer is released outside the field. New in pinput 6.
+  final TapRegionUpCallback? onTapUpOutside;
+
+  /// Whether the error shows while the field still has focus. New in pinput 6.
+  final bool showErrorWhenFocused;
+
+  /// Whether text in the code cells can be selected.
+  ///
+  /// pinput 6 turns this on by default; the package keeps it off, which is
+  /// what a code field wants.
+  final bool? enableInteractiveSelection;
+
+  /// Accessible label announced for the code field. Defaults to
+  /// [FormMessages.otpFieldLabel].
+  final String? semanticLabel;
+
+  /// Creates the one-time-code field's configuration.
   const OtpTextFiledConfig({
     this.length,
     this.defaultPinTheme,
@@ -338,8 +437,13 @@ class OtpTextFiledConfig {
     this.contextMenuBuilder,
     this.onTapOutside,
     this.smsRetriever,
+    this.onTapUpOutside,
+    this.showErrorWhenFocused = false,
+    this.enableInteractiveSelection = false,
+    this.semanticLabel,
   });
 
+  /// A copy of this configuration with the given properties replaced.
   OtpTextFiledConfig copyWith({
     PinTheme? defaultPinTheme,
     PinTheme? focusedPinTheme,
@@ -354,7 +458,7 @@ class OtpTextFiledConfig {
     ValueChanged<LoginData>? onSubmitted,
     VoidCallback? onTap,
     VoidCallback? onLongPress,
-    TextFieldController? controller,
+    TextEditingController? controller,
     FocusNode? focusNode,
     Widget? preFilledWidget,
     JustIndexedWidgetBuilder? separatorBuilder,
@@ -400,6 +504,10 @@ class OtpTextFiledConfig {
     EditableTextContextMenuBuilder? contextMenuBuilder,
     TapRegionCallback? onTapOutside,
     SmsRetriever? smsRetriever,
+    TapRegionUpCallback? onTapUpOutside,
+    bool? showErrorWhenFocused,
+    bool? enableInteractiveSelection,
+    String? semanticLabel,
   }) {
     return OtpTextFiledConfig(
       defaultPinTheme: defaultPinTheme ?? this.defaultPinTheme,
@@ -466,6 +574,19 @@ class OtpTextFiledConfig {
       contextMenuBuilder: contextMenuBuilder ?? this.contextMenuBuilder,
       onTapOutside: onTapOutside ?? this.onTapOutside,
       smsRetriever: smsRetriever ?? this.smsRetriever,
+      onTapUpOutside: onTapUpOutside ?? this.onTapUpOutside,
+      showErrorWhenFocused: showErrorWhenFocused ?? this.showErrorWhenFocused,
+      enableInteractiveSelection:
+          enableInteractiveSelection ?? this.enableInteractiveSelection,
+      semanticLabel: semanticLabel ?? this.semanticLabel,
     );
   }
 }
+
+/// Correctly spelled alias for [OtpTextFiledConfig], which configures
+/// the one-time-code field.
+///
+/// The original name carries a typo ("TextFiled"). Both names work and mean
+/// the same class; prefer this one. The misspelling will be deprecated in
+/// 2.0.0 and removed in 3.0.0.
+typedef OtpTextFieldConfig = OtpTextFiledConfig;

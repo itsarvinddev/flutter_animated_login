@@ -1,127 +1,169 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_intl_phone_field/phone_number.dart';
 
 import '../flutter_animated_login.dart';
+import 'controller.dart';
 import 'utils/extension.dart';
 import 'widget/button.dart';
-import 'widget/email_phone_field.dart';
+import 'widget/identity_field.dart';
 
-class FlutterAnimatedReset extends StatelessWidget {
-  final ResetConfig config;
-  final LoginConfig loginConfig;
-  final LoginType loginType;
-  final TextFieldController controller;
-  final PageConfig pageConfig;
-  final ResetPasswordCallback? onResetPassword;
-  final GlobalKey<FormState> formKey;
+/// The screen that asks where to send a password-reset link.
+class FlutterAnimatedReset extends StatefulWidget {
+  /// Creates the reset-password screen.
   const FlutterAnimatedReset({
     super.key,
     required this.config,
     required this.loginConfig,
     required this.loginType,
-    required this.controller,
     required this.pageConfig,
+    required this.controller,
     this.onResetPassword,
-    required this.formKey,
   });
+
+  /// Everything about this screen.
+  final ResetConfig config;
+
+  /// Supplies the strings and the field configuration.
+  final LoginConfig loginConfig;
+
+  /// Decides the primary button's default label.
+  final LoginType loginType;
+
+  /// Everything about the page this screen is drawn on.
+  final PageConfig pageConfig;
+
+  /// Owns the flow's state.
+  final FlutterAnimatedLoginController controller;
+
+  /// Sends the reset link.
+  final ResetPasswordCallback? onResetPassword;
+
+  @override
+  State<FlutterAnimatedReset> createState() => _FlutterAnimatedResetState();
+}
+
+class _FlutterAnimatedResetState extends State<FlutterAnimatedReset> {
+  final ScreenErrorSnackBar _errors = ScreenErrorSnackBar();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  FlutterAnimatedLoginController get controller => widget.controller;
+  FormMessages get messages => widget.loginConfig.messages;
+
+  Future<String?> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      _errors.show(
+        context,
+        messages.errorTitle,
+        description: messages.invalidFormData,
+      );
+      return null;
+    }
+    _formKey.currentState?.save();
+
+    final onResetPassword = widget.onResetPassword;
+    if (onResetPassword == null) return null;
+
+    controller.setBusy(true);
+    try {
+      final result = await onResetPassword(controller.identifier);
+      if (!mounted) return null;
+      if (result.isNotEmptyOrNull) {
+        _errors.show(context, messages.errorTitle, description: result);
+        return result;
+      }
+      // context.success replaces any error still on screen.
+      context.success(
+        messages.successTitle,
+        description: messages.resetLinkSent,
+      );
+      if (widget.config.returnToLoginOnSuccess) {
+        resetUnlessNavigatedAway(context, () {
+          _formKey.currentState?.reset();
+          controller.reset();
+        });
+      }
+      return null;
+    } finally {
+      controller.setBusy(false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    AnimatedLoginScope.of(context);
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
-    Future<String?> onLoginFunction() async {
-      try {
-        signInButtonIsLoading.value = true;
-        final isValid = formKey.currentState?.validate() ?? false;
-        if (!isValid) {
-          context.error(
-            "Error",
-            description: "Invalid form data, fill all required fields",
-          );
-          return null;
-        }
-        formKey.currentState?.save();
-        if (onResetPassword != null) {
-          final result = await onResetPassword?.call(controller.text);
-          if (context.mounted) {
-            if (result.isNotEmptyOrNull) {
-              context.error("Error", description: result);
-            } else {
-              context.success(
-                "Success",
-                description: "Password reset link sent successfully",
-              );
-              nextPageNotifier.value = 0;
-              formKey.currentState?.reset();
-              isFormValidNotifier.value = false;
-              controller.clear();
-              isPhoneNotifier.value = false;
-              usernameNotifier.value = PhoneNumber(
-                countryISOCode: "",
-                countryCode: "",
-                number: "",
-              );
-            }
-          }
-        }
-        return null;
-      } finally {
-        signInButtonIsLoading.value = false;
-      }
-    }
+    final config = widget.config;
+    final gap =
+        widget.loginConfig.fieldGap ??
+        AnimatedLoginTheme.of(context).fieldGap ??
+        18;
+
+    // The reset screen asks only for an identifier.
+    controller.configure(passwordRequired: false, consentRequired: false);
+
+    final identityConfig =
+        config.textFiledConfig ?? widget.loginConfig.textFiledConfig;
 
     return PageWidget(
-      config: pageConfig,
-      builder: (context, constraints) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          config.header ??
-              config.titleWidget ??
-              TitleWidget(
-                title: config.title ?? 'Reset Account Password',
-                titleStyle: textTheme.titleLarge,
-                subtitle: config.subtitle ??
-                    "We'll send you a link to reset your account password.",
-                subtitleStyle: textTheme.titleMedium,
-                titleGap: const SizedBox(height: 6),
-                child: config.logo.orShrink,
+      config: widget.pageConfig,
+      builder:
+          (context, constraints) => Form(
+            key: _formKey,
+            child: AutofillGroup(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  config.header ??
+                      config.titleWidget ??
+                      TitleWidget(
+                        title: config.title ?? messages.resetTitle,
+                        titleStyle:
+                            AnimatedLoginTheme.of(context).titleStyle ??
+                            textTheme.titleLarge,
+                        subtitle: config.subtitle ?? messages.resetSubtitle,
+                        subtitleStyle:
+                            AnimatedLoginTheme.of(context).subtitleStyle ??
+                            textTheme.titleMedium,
+                        titleGap: const SizedBox(height: 6),
+                        child: config.logo,
+                      ),
+                  IdentityField(
+                    config: identityConfig,
+                    controller: controller,
+                    formMessages: messages,
+                    loginFieldInputType: widget.loginConfig.loginFieldInputType,
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) => _submit(),
+                  ),
+                  SizedBox(height: gap),
+                  SignInButton(
+                    onPressed: _submit,
+                    config: widget.loginConfig,
+                    loginType: widget.loginType,
+                    controller: controller,
+                    label: config.buttonText ?? Text(messages.resetButton),
+                  ),
+                  const SizedBox(height: 8),
+                  ActionButtonBox(
+                    child: TextButton(
+                      onPressed: () => controller.goTo(LoginStep.login),
+                      style:
+                          AnimatedLoginTheme.of(context).secondaryButtonStyle ??
+                          TextButton.styleFrom(
+                            textStyle:
+                                config.buttonTextStyle ??
+                                AnimatedLoginTheme.of(context).linkStyle ??
+                                textTheme.titleMedium,
+                            minimumSize: const Size.fromHeight(48),
+                          ),
+                      child: Text(messages.signIn),
+                    ),
+                  ),
+                  config.footer.orShrink,
+                ],
               ),
-          EmailPhoneTextField(
-            controller: controller,
-            config: config.textFiledConfig.copyWith(
-              onSubmitted: (p0) {
-                config.textFiledConfig.onSubmitted?.call(p0);
-                onLoginFunction();
-              },
-              textInputAction: TextInputAction.done,
             ),
-            formMessages: loginConfig.messages,
-            loginFieldInputType: loginConfig.loginFieldInputType,
           ),
-          const SizedBox(height: 30),
-          SignInButton(
-            onPressed: onLoginFunction,
-            config: loginConfig.copyWith(
-              buttonText: const Text('Reset Password'),
-            ),
-            constraints: constraints,
-            loginType: loginType,
-          ),
-          const SizedBox(height: 8),
-          TextButton(
-            onPressed: () => nextPageNotifier.value = 0,
-            style: TextButton.styleFrom(
-              textStyle: config.buttonTextStyle ?? textTheme.titleMedium,
-              minimumSize: Size(
-                constraints.maxWidth >= 600 ? 300 : constraints.maxWidth * 0.5,
-                48,
-              ),
-            ),
-            child: const Text('Sign In'),
-          ),
-          config.footer.orShrink,
-        ],
-      ),
     );
   }
 }

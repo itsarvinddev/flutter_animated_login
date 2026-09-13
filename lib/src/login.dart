@@ -1,98 +1,179 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_intl_phone_field/phone_number.dart';
-import 'package:signals/signals_flutter.dart';
+import 'package:flutter/services.dart';
 
 import '../flutter_animated_login.dart';
-import 'reset_password.dart';
-import 'signup.dart';
+import 'controller.dart';
 import 'utils/extension.dart';
 import 'widget/button.dart';
-import 'widget/email_phone_field.dart';
+import 'widget/identity_field.dart';
 import 'widget/oauth.dart';
 import 'widget/password_field.dart';
 
-/// The callback triggered your login logic
-/// The result is an error message, callback successes if message is null
+/// Runs your sign-in.
+///
+/// Return `null` or the empty string on success, or a message describing the
+/// failure — it is shown to the user.
 typedef LoginCallback = Future<String?>? Function(LoginData);
 
-/// The callback triggered your signup logic
-/// The result is an error message, callback successes if message is null
+/// Runs your account creation. Same success and failure convention as
+/// [LoginCallback].
 typedef SignupCallback = Future<String?>? Function(SignupData);
 
-/// If the callback returns true, the additional data card is shown
+/// Asked after a provider signs a user in. Resolve `true` to open the signup
+/// screen so extra details can be collected.
 typedef ProviderNeedsSignUpCallback = Future<bool> Function();
 
-/// The callback triggered your auth logic for the provider
+/// Runs a social provider's authentication. Same success and failure
+/// convention as [LoginCallback].
 typedef ProviderAuthCallback = Future<String?>? Function();
 
-/// The callback triggered your OTP verification logic
+/// Runs your one-time-code check. Same success and failure convention as
+/// [LoginCallback].
 typedef VerifyCallback = Future<String?>? Function(LoginData);
 
-/// The callback triggered your OTP resend logic
+/// Sends another one-time code. Same success and failure convention as
+/// [LoginCallback].
 typedef ResendOtpCallback = Future<String?>? Function(LoginData);
 
-/// The callback triggered your reset password logic
+/// Sends a password-reset link. Same success and failure convention as
+/// [LoginCallback].
 typedef ResetPasswordCallback = Future<String?>? Function(String);
 
+/// How the user signs in.
+enum LoginType {
+  /// A one-time code only. Submitting the identifier advances to the verify
+  /// screen.
+  otp,
+
+  /// A password only.
+  password,
+
+  /// The user chooses. The login screen shows a password field and a link that
+  /// switches to the one-time-code path, and [LoginData.method] tells you which
+  /// one ran.
+  ///
+  /// Before 1.0.0 this showed a code-only screen — no password field and no
+  /// choice — and on success cleared the form instead of opening the verify
+  /// screen.
+  otpAndPassword,
+}
+
+/// An animated login flow: sign in, one-time code, sign up and reset password
+/// on one widget.
+///
+/// ```dart
+/// FlutterAnimatedLogin(
+///   onLogin: (data) async {
+///     await api.sendOtp(data.name);
+///     return null;            // null means success
+///   },
+///   onVerify: (data) async => api.verify(data.name, data.secret!),
+/// )
+/// ```
+///
+/// Pass a [controller] to drive the flow yourself — jump to the verify screen,
+/// prefill from a deep link, reset after a sign-out.
 class FlutterAnimatedLogin extends StatefulWidget {
-  /// The callback triggered your login logic
+  /// Runs your sign-in.
   final LoginCallback? onLogin;
 
-  /// The callback triggered your signup logic
+  /// Runs your account creation. Supplying it shows the "Sign Up" link.
   final SignupCallback? onSignup;
 
-  /// [VerifyCallback] triggered your OTP verification logic
-  /// The result is an error message, callback successes if message is null
+  /// Runs your one-time-code check.
   final VerifyCallback? onVerify;
 
-  /// [ResendOtpCallback] triggered your OTP resend logic
+  /// Sends another one-time code.
   final ResendOtpCallback? onResendOtp;
 
-  /// The configuration for the login text field
-  final LoginConfig loginConfig;
-
-  /// The list of login providers for the oauth
-  final List<LoginProvider>? providers;
-
-  /// The login type, default is [LoginType.otp]
-  final LoginType loginType;
-
-  /// The configuration for the verify page
-  final VerifyConfig verifyConfig;
-
-  /// The terms and conditions for the login/signup page
-  final Widget? termsAndConditions;
-
-  /// [PageConfig] for the page widget to customize the page.
-  final PageConfig config;
-
-  /// The configuration for the reset password page
-  final ResetConfig resetConfig;
-
-  /// The configuration for the signup page
-  final SignupConfig signupConfig;
-
-  /// The callback triggered your reset password logic
+  /// Sends a password-reset link. Supplying it shows the
+  /// "Forgot Password?" link.
   final ResetPasswordCallback? onResetPassword;
 
-  /// If true, the debug mode is enabled for signals
+  /// Everything about the login screen.
+  final LoginConfig loginConfig;
+
+  /// The social sign-in options.
+  final List<LoginProvider>? providers;
+
+  /// How the user signs in.
+  final LoginType loginType;
+
+  /// Everything about the one-time-code screen.
+  final VerifyConfig verifyConfig;
+
+  /// Terms text shown under the social buttons.
+  ///
+  /// For consent that must be given before the form can be submitted, use
+  /// [consent] instead.
+  final Widget? termsAndConditions;
+
+  /// A checkbox the user must tick before the primary button enables.
+  final ConsentConfig? consent;
+
+  /// Everything about the page the screens are drawn on.
+  final PageConfig config;
+
+  /// Everything about the reset-password screen.
+  final ResetConfig resetConfig;
+
+  /// Everything about the signup screen.
+  final SignupConfig signupConfig;
+
+  /// Drives the flow from outside.
+  ///
+  /// Optional: one is created and disposed internally when you pass none. A
+  /// controller you supply is yours to dispose.
+  ///
+  /// When you pass one, the `controller` fields inside [loginConfig] and
+  /// [verifyConfig] are ignored — the flow controller owns the text
+  /// controllers. Pass yours to [FlutterAnimatedLoginController]'s constructor
+  /// instead.
+  final FlutterAnimatedLoginController? controller;
+
+  /// Branding for every screen. Wins over
+  /// `Theme.of(context).extension<AnimatedLoginTheme>()`.
+  final AnimatedLoginTheme? theme;
+
+  /// Called whenever the visible screen changes.
+  final ValueChanged<LoginStep>? onStepChanged;
+
+  /// Whether the Android system back button and the browser back button move
+  /// back to the login screen instead of leaving the flow.
+  ///
+  /// Only intercepts back while a screen other than [LoginStep.login] is
+  /// showing, so the host route still pops normally from the login screen.
+  final bool handleBackNavigation;
+
+  /// No longer used.
+  @Deprecated(
+    'Signals were removed in 1.0.0, so there is no observer left to toggle. '
+    'This flag does nothing and will be removed in 2.0.0.',
+  )
   final bool debug;
 
+  /// Creates an animated login flow.
   const FlutterAnimatedLogin({
     super.key,
     this.onLogin,
     this.onSignup,
     this.onVerify,
     this.onResendOtp,
+    this.onResetPassword,
     this.loginConfig = const LoginConfig(),
     this.providers,
     this.loginType = LoginType.otp,
     this.verifyConfig = const VerifyConfig(),
     this.termsAndConditions,
+    this.consent,
     this.config = const PageConfig(),
     this.resetConfig = const ResetConfig(),
     this.signupConfig = const SignupConfig(),
-    this.onResetPassword,
+    this.controller,
+    this.theme,
+    this.onStepChanged,
+    this.handleBackNavigation = true,
+    @Deprecated('Does nothing since 1.0.0. Removed in 2.0.0.')
     this.debug = false,
   });
 
@@ -101,282 +182,397 @@ class FlutterAnimatedLogin extends StatefulWidget {
 }
 
 class _FlutterAnimatedLoginState extends State<FlutterAnimatedLogin> {
-  /// The text controller for the text field if not provided by the user
-  late TextFieldController _textController;
-
-  /// The text controller for the password field if not provided by the user
-  late TextFieldController _passwordController;
-
-  /// The text controller for the password field if not provided by the user
-  late TextFieldController _confirmPasswordController;
-
-  /// Form key for the login form
-  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+  late FlutterAnimatedLoginController _controller;
+  bool _ownsController = false;
+  LoginStep? _lastStep;
 
   @override
   void initState() {
-    final controller = widget.loginConfig.textFiledConfig.controller;
-    final passwordController = widget.loginConfig.passwordConfig.controller;
-    _passwordController = passwordController ?? TextFieldController();
-    _textController = controller ?? TextFieldController();
-    _confirmPasswordController = TextFieldController();
-    final text = _textController.text;
-    isPhoneNotifier.value = text.isPhoneNumber || text.isIntlPhoneNumber;
-    isFormValidNotifier.value = text.isEmail || isPhoneNotifier.value;
-    _textController.addListener(() {
-      final text = _textController.text;
-      if (text.isNotEmpty) {
-        /// Check if the text is a international phone number
-        isPhoneNotifier.value = text.isIntlPhoneNumber;
-      } else if (text.isEmptyOrNull ||
-          text.contains(RegExp(r'^[a-zA-Z0-9]+$'))) {
-        isPhoneNotifier.value = false;
-      }
-      isFormValidNotifier.value = text.isEmail || isPhoneNotifier.value;
-    });
-    if (widget.loginType == LoginType.password) {
-      _passwordController.addListener(() {
-        final password = _passwordController.text;
-        final text = _textController.text;
-        isFormValidNotifier.value = password.isNotEmptyOrNull &&
-            (text.isNotEmptyOrNull && (text.isEmail || isPhoneNotifier.value));
-      });
-    }
-    if (!widget.debug) SignalsObserver.instance = null;
     super.initState();
+    _attach(widget.controller);
+  }
+
+  void _attach(FlutterAnimatedLoginController? external) {
+    _ownsController = external == null;
+    _controller =
+        external ??
+        FlutterAnimatedLoginController(
+          initialIdentifier: widget.loginConfig.textFiledConfig.initialValue,
+          initialCountryCode:
+              widget.loginConfig.textFiledConfig.initialCountryCode ?? 'IN',
+          identifierController: widget.loginConfig.textFiledConfig.controller,
+          passwordController: widget.loginConfig.passwordConfig.controller,
+          otpController: widget.verifyConfig.textFiledConfig.controller,
+        );
+    if (widget.consent?.initialValue ?? false) {
+      _controller.setAcceptedTerms(true);
+    }
+    _lastStep = _controller.step;
+    _controller.addListener(_onControllerChanged);
+  }
+
+  void _detach() {
+    _controller.removeListener(_onControllerChanged);
+    if (_ownsController) _controller.dispose();
+  }
+
+  void _onControllerChanged() {
+    final step = _controller.step;
+    if (step != _lastStep) {
+      _lastStep = step;
+      widget.onStepChanged?.call(step);
+    }
+  }
+
+  @override
+  void didUpdateWidget(FlutterAnimatedLogin oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Swapping the controller after mount used to be ignored entirely.
+    if (oldWidget.controller != widget.controller) {
+      _detach();
+      _attach(widget.controller);
+    }
   }
 
   @override
   void dispose() {
-    _textController.isDisposed ? null : _textController.dispose();
-    _passwordController.isDisposed ? null : _passwordController.dispose();
-    _confirmPasswordController.isDisposed
-        ? null
-        : _confirmPasswordController.dispose();
-
+    _detach();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final children = <Widget>[
-      _LoginPage(
-        config: widget.loginConfig,
-        loginType: widget.loginType,
-        onLogin: widget.onLogin,
-        onVerify: widget.onVerify,
-        providers: widget.providers,
-        textController: _textController,
-        termsAndConditions: widget.termsAndConditions,
-        passwordController: _passwordController,
-        pageConfig: widget.config,
-        formKey: formKey,
-        formMessages: widget.loginConfig.messages,
-      ),
-      FlutterAnimatedVerify(
-        onVerify: widget.onVerify,
-        name: _textController.text.isEmail
-            ? _textController.text
-            : usernameNotifier.value.completeNumber,
-        config: widget.verifyConfig,
-        onResendOtp: widget.onResendOtp,
-        termsAndConditions: widget.termsAndConditions,
-        pageConfig: widget.config,
-        formMessages: widget.loginConfig.messages,
-      ),
-      FlutterAnimatedSignup(
-        config: widget.signupConfig.copyWith(
-          textFiledConfig: widget.loginConfig.textFiledConfig,
-          passwordTextFiledConfig: widget.loginConfig.passwordConfig,
-        ),
-        onSignup: widget.onSignup,
-        loginConfig: widget.loginConfig,
-        loginType: widget.loginType,
-        controller: _textController,
-        pageConfig: widget.config,
-        passwordController: _passwordController,
-        formKey: formKey,
-        confirmPasswordController: _confirmPasswordController,
-      ),
-      FlutterAnimatedReset(
-        config: widget.resetConfig.copyWith(
-          textFiledConfig: widget.loginConfig.textFiledConfig,
-        ),
-        onResetPassword: widget.onResetPassword,
-        loginConfig: widget.loginConfig,
-        loginType: widget.loginType,
-        controller: _textController,
-        pageConfig: widget.config,
-        formKey: formKey,
-      ),
-    ];
-    return Form(
-      key: formKey,
-      child: AnimatedStack<int>(
-        value: nextPageNotifier.watch(context),
-        values: children.map((e) => children.indexOf(e)).toList(),
-        builder: (context, value) => children[value],
-      ),
+    final theme = widget.theme;
+    final resolved =
+        theme == null
+            ? AnimatedLoginTheme.of(context)
+            : AnimatedLoginTheme.of(context).merge(theme);
+
+    Widget body = _AnimatedLoginBody(
+      owner: widget,
+      controller: _controller,
+      loginTheme: resolved,
+    );
+
+    // One Scaffold for the whole flow, outside the step cross-fade. Each step
+    // used to build its own, so for the 300 ms of a transition two Scaffolds
+    // shared a route and both drew the current SnackBar under the same Hero
+    // tag. If the host navigated in that window -- go_router's context.go or
+    // an auth redirect after a wrong code, say -- Flutter threw "There are
+    // multiple heroes that share the same tag within a subtree".
+    if (widget.config.useScaffold) {
+      body = Scaffold(
+        backgroundColor: widget.config.scaffoldBackgroundColor,
+        body: body,
+      );
+    }
+
+    Widget flow = AnimatedLoginScope(controller: _controller, child: body);
+
+    if (theme != null) {
+      flow = AnimatedLoginThemeScope(theme: resolved, child: flow);
+    }
+
+    if (!widget.handleBackNavigation) return flow;
+
+    // Back used to leave the whole flow from the OTP, signup and reset
+    // screens, with no way to return to the login screen but a small link.
+    return ListenableBuilder(
+      listenable: _controller,
+      builder:
+          (context, child) => PopScope(
+            canPop: _controller.step == LoginStep.login,
+            onPopInvokedWithResult: (didPop, _) {
+              if (didPop) return;
+              _controller.goTo(LoginStep.login);
+            },
+            child: child!,
+          ),
+      child: flow,
     );
   }
 }
 
-enum LoginType {
-  /// Login with OTP [LoginType.otp]
-  /// This option provides the option to login with OTP only
-  otp,
-
-  /// Login with Password [LoginType.password]
-  /// This option provides the option to login with password only
-  /// Forget password and signup options are available
-  password,
-
-  /// Login with OTP and Password [LoginType.otpAndPassword]
-  /// This option provides the option to login with OTP or Password
-  /// If the user selects OTP, the user will be redirected to the OTP verification page
-  /// If the user selects Password, the user will be logged in with the password
-  /// ! This option does not provide the option to login with OTP and Password at the same time
-  otpAndPassword,
-}
-
-class _LoginPage extends StatelessWidget {
-  final LoginConfig config;
-  final Widget? termsAndConditions;
-  final LoginType loginType;
-  final LoginCallback? onLogin;
-  final VerifyCallback? onVerify;
-  final List<LoginProvider>? providers;
-  final TextFieldController textController;
-  final TextFieldController passwordController;
-  final GlobalKey<FormState> formKey;
-  final FormMessages formMessages;
-
-  /// [PageConfig] for the page widget to customize the page.
-  final PageConfig pageConfig;
-
-  const _LoginPage({
-    this.onLogin,
-    this.onVerify,
-    this.providers,
-    required this.config,
-    required this.loginType,
-    required this.textController,
-    required this.passwordController,
-    required this.formMessages,
-    this.termsAndConditions,
-    this.pageConfig = const PageConfig(),
-    required this.formKey,
+class _AnimatedLoginBody extends StatelessWidget {
+  const _AnimatedLoginBody({
+    required this.owner,
+    required this.controller,
+    required this.loginTheme,
   });
+
+  final FlutterAnimatedLogin owner;
+  final FlutterAnimatedLoginController controller;
+  final AnimatedLoginTheme loginTheme;
+
+  /// The page configuration each step draws with. The Scaffold, if any, is
+  /// already provided once by [FlutterAnimatedLogin] itself.
+  PageConfig get _stepPageConfig =>
+      owner.config.useScaffold
+          ? owner.config.copyWith(useScaffold: false)
+          : owner.config;
 
   @override
   Widget build(BuildContext context) {
-    final textConfig = config.textFiledConfig;
-    final passConfig = config.passwordConfig;
-    final isLoginWithOTP =
-        loginType == LoginType.otp || loginType == LoginType.otpAndPassword;
+    // Subscribe to the controller so a step change rebuilds the switcher.
+    AnimatedLoginScope.of(context);
+    final pageConfig = _stepPageConfig;
 
-    Future<String?> onLoginFunction() async {
-      try {
-        signInButtonIsLoading.value = true;
-        final isValid = formKey.currentState?.validate() ?? false;
-        if (!isValid) {
-          context.error(
-            "Error",
-            description: "Invalid form data, fill all required fields",
-          );
-          return null;
-        }
-        formKey.currentState?.save();
-        if (onLogin != null) {
-          final result = await onLogin?.call(LoginData(
-            name: textController.text.isEmail
-                ? textController.text
-                : usernameNotifier.value.completeNumber,
-            secret: passwordController.text,
-          ));
-          if (context.mounted) {
-            if (result.isNotEmptyOrNull) {
-              context.error("Error", description: result);
-            } else if (loginType == LoginType.otp) {
-              nextPageNotifier.value = 1;
-            } else {
-              nextPageNotifier.value = 0;
-              formKey.currentState?.reset();
-              isFormValidNotifier.value = false;
-              passwordController.clear();
-              textController.clear();
-              isPhoneNotifier.value = false;
-              usernameNotifier.value = PhoneNumber(
-                countryISOCode: "",
-                countryCode: "",
-                number: "",
-              );
-            }
-          }
-        }
-        return null;
-      } finally {
-        signInButtonIsLoading.value = false;
-      }
+    final screens = <LoginStep, Widget Function()>{
+      LoginStep.login:
+          () => _LoginPage(
+            owner: owner,
+            controller: controller,
+            pageConfig: pageConfig,
+          ),
+      LoginStep.verify:
+          () => FlutterAnimatedVerify(
+            onVerify: owner.onVerify,
+            onResendOtp: owner.onResendOtp,
+            config: owner.verifyConfig,
+            pageConfig: pageConfig,
+            formMessages: owner.loginConfig.messages,
+            controller: controller,
+            termsAndConditions: owner.termsAndConditions,
+            providers: owner.providers,
+            providerLayout: owner.loginConfig.providerLayout,
+            providerSpacing: owner.loginConfig.providerSpacing,
+          ),
+      LoginStep.signup:
+          () => FlutterAnimatedSignup(
+            onSignup: owner.onSignup,
+            loginConfig: owner.loginConfig,
+            loginType: owner.loginType,
+            pageConfig: pageConfig,
+            config: owner.signupConfig,
+            controller: controller,
+            consent: owner.consent,
+            termsAndConditions: owner.termsAndConditions,
+            providers: owner.providers,
+          ),
+      LoginStep.resetPassword:
+          () => FlutterAnimatedReset(
+            onResetPassword: owner.onResetPassword,
+            loginConfig: owner.loginConfig,
+            loginType: owner.loginType,
+            pageConfig: pageConfig,
+            config: owner.resetConfig,
+            controller: controller,
+          ),
+    };
+
+    return AnimatedStack(
+      value: controller.step.index,
+      duration:
+          loginTheme.pageTransitionDuration ??
+          const Duration(milliseconds: 300),
+      switchInCurve: loginTheme.pageTransitionCurve ?? Curves.easeIn,
+      switchOutCurve: loginTheme.pageTransitionCurve ?? Curves.easeOut,
+      transitionBuilder:
+          loginTheme.pageTransitionBuilder ??
+          AnimatedSwitcher.defaultTransitionBuilder,
+      // Only the visible screen is built. Before 1.0.0 all four were
+      // constructed on every frame and then thrown away.
+      builder: (context, value) => screens[LoginStep.values[value]]!(),
+    );
+  }
+}
+
+class _LoginPage extends StatefulWidget {
+  const _LoginPage({
+    required this.owner,
+    required this.controller,
+    required this.pageConfig,
+  });
+
+  final FlutterAnimatedLogin owner;
+  final FlutterAnimatedLoginController controller;
+  final PageConfig pageConfig;
+
+  @override
+  State<_LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<_LoginPage> {
+  final ScreenErrorSnackBar _errors = ScreenErrorSnackBar();
+  // Each screen owns its own Form. Before 1.0.0 one GlobalKey wrapped the
+  // switcher, so during a page transition two screens' fields lived in the
+  // same FormState and validate() ran against the screen being left.
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  FlutterAnimatedLoginController get controller => widget.controller;
+  LoginConfig get config => widget.owner.loginConfig;
+  FormMessages get messages => config.messages;
+
+  bool get _usesOtp =>
+      widget.owner.loginType == LoginType.otp ||
+      (widget.owner.loginType == LoginType.otpAndPassword && controller.useOtp);
+
+  bool get _needsPassword => !_usesOtp;
+
+  Future<String?> _submit() async {
+    final consent = widget.owner.consent;
+    // Only gate on consent this screen actually shows. Checking isRequired
+    // alone meant terms required at sign-up blocked every *login* with
+    // "Please accept the terms to continue" -- on a screen with no checkbox to
+    // tick, so nobody could sign in at all. This matches the button's own
+    // gating below and the signup screen's check.
+    final consentGates =
+        (consent?.isRequired ?? false) && (consent?.showOnLogin ?? false);
+    if (consentGates && !controller.acceptedTerms) {
+      _errors.show(
+        context,
+        messages.errorTitle,
+        description: consent?.errorText ?? messages.consentRequired,
+      );
+      return null;
     }
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      _errors.show(
+        context,
+        messages.errorTitle,
+        description: messages.invalidFormData,
+      );
+      return null;
+    }
+    _formKey.currentState?.save();
+
+    final onLogin = widget.owner.onLogin;
+    if (onLogin == null) return null;
+
+    controller.setBusy(true);
+    try {
+      final result = await onLogin(
+        LoginData(
+          name: controller.identifier,
+          secret: _needsPassword ? controller.passwordController.text : null,
+          method: _usesOtp ? LoginMethod.otp : LoginMethod.password,
+          phoneNumber: controller.isPhone ? controller.phoneNumber : null,
+          acceptedTerms: controller.acceptedTerms,
+        ),
+      );
+      if (!mounted) return null;
+      if (result.isNotEmptyOrNull) {
+        _errors.show(context, messages.errorTitle, description: result);
+        return result;
+      }
+      _errors.dismiss(context);
+      if (_usesOtp) {
+        controller.showOtp();
+      } else {
+        // Signals the platform that the credentials are worth saving; without
+        // it the AutofillGroup never prompts.
+        TextInput.finishAutofillContext();
+        resetUnlessNavigatedAway(context, () {
+          _formKey.currentState?.reset();
+          controller.reset();
+        });
+      }
+      return null;
+    } finally {
+      // Guarded: the host may have navigated away inside onLogin.
+      controller.setBusy(false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    AnimatedLoginScope.of(context);
+    final owner = widget.owner;
+    final consent = owner.consent;
+    final gap =
+        config.fieldGap ?? AnimatedLoginTheme.of(context).fieldGap ?? 18;
+
+    controller.configure(
+      passwordRequired: _needsPassword,
+      consentRequired:
+          (consent?.isRequired ?? false) && (consent?.showOnLogin ?? false),
+    );
+
+    final showSignup = config.showSignupLink ?? (owner.onSignup != null);
+    // Supplying onResetPassword is the opt-in, whatever the login type: an
+    // app can sign people in with a one-time code and still let them reset a
+    // password they use elsewhere. Hide it with showForgotLink: false.
+    final showForgot = config.showForgotLink ?? (owner.onResetPassword != null);
 
     return PageWidget(
-      config: pageConfig,
-      builder: (context, constraints) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          config.header ??
-              config.titleWidget ??
-              TitleWidget(
-                title: config.title,
-                subtitle: config.subtitle,
-                child: config.logo,
+      config: widget.pageConfig,
+      builder:
+          (context, constraints) => Form(
+            key: _formKey,
+            // Lets the platform password manager offer to save the credentials.
+            child: AutofillGroup(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  config.header ??
+                      config.titleWidget ??
+                      TitleWidget(
+                        title: config.title,
+                        subtitle: config.subtitle,
+                        child: config.logo,
+                      ),
+                  IdentityField(
+                    config: config.textFiledConfig,
+                    controller: controller,
+                    formMessages: messages,
+                    loginFieldInputType: config.loginFieldInputType,
+                    textInputAction:
+                        _needsPassword
+                            ? TextInputAction.next
+                            : TextInputAction.done,
+                    onSubmitted: _needsPassword ? null : (_) => _submit(),
+                  ),
+                  if (_needsPassword) ...[
+                    SizedBox(height: gap),
+                    PasswordTextField(
+                      config: config.passwordConfig.copyWith(
+                        textInputAction: TextInputAction.done,
+                      ),
+                      controller: controller.passwordController,
+                      formMessages: messages,
+                      onSubmitted: (_) => _submit(),
+                    ),
+                  ],
+                  if (owner.loginType == LoginType.otpAndPassword)
+                    LoginMethodToggle(
+                      messages: messages,
+                      controller: controller,
+                      textStyle: config.buttonTextStyle,
+                    ),
+                  if (showSignup || showForgot) ...[
+                    const SizedBox(height: 8),
+                    SignUpAndForgetButton(
+                      messages: messages,
+                      controller: controller,
+                      showSignup: showSignup,
+                      showForgot: showForgot,
+                      textStyle: config.buttonTextStyle,
+                    ),
+                  ],
+                  if (consent != null && consent.showOnLogin) ...[
+                    SizedBox(height: gap / 2),
+                    ConsentCheckbox(config: consent, controller: controller),
+                  ],
+                  SizedBox(height: gap),
+                  SignInButton(
+                    onPressed: _submit,
+                    config: config,
+                    loginType: owner.loginType,
+                    controller: controller,
+                  ),
+                  OAuthWidget(
+                    providers: owner.providers,
+                    termsAndConditions: owner.termsAndConditions,
+                    footerWidget: config.footer,
+                    messages: messages,
+                    controller: controller,
+                    layout: config.providerLayout,
+                    spacing: config.providerSpacing,
+                  ),
+                ],
               ),
-          EmailPhoneTextField(
-            controller: textController,
-            config: isLoginWithOTP
-                ? textConfig.copyWith(
-                    onSubmitted: (p0) {
-                      textConfig.onSubmitted?.call(p0);
-                      onLoginFunction();
-                    },
-                    textInputAction: TextInputAction.done,
-                  )
-                : textConfig,
-            formMessages: formMessages,
-            loginFieldInputType: config.loginFieldInputType,
-          ),
-          if (!isLoginWithOTP) ...[
-            const SizedBox(height: 18),
-            PasswordTextField(
-              config: !isLoginWithOTP
-                  ? passConfig.copyWith(
-                      onFieldSubmitted: (p0) {
-                        passConfig.onFieldSubmitted?.call(p0);
-                        onLoginFunction();
-                      },
-                    )
-                  : passConfig,
-              controller: passwordController,
-              formMessages: formMessages,
             ),
-            const SizedBox(height: 8),
-            const SignUpAndForgetButton(),
-          ],
-          const SizedBox(height: 18),
-          SignInButton(
-            onPressed: onLoginFunction,
-            config: config,
-            constraints: constraints,
-            loginType: loginType,
           ),
-          OAuthWidget(
-            providers: providers,
-            termsAndConditions: termsAndConditions,
-            footerWidget: config.footer,
-          ),
-        ],
-      ),
     );
   }
 }

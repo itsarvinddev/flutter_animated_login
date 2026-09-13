@@ -1,0 +1,7 @@
+# Tests inherit the package's strict analysis, minus the rules that only make
+# sense for a published API surface.
+include: ../analysis_options.yaml
+
+linter:
+  rules:
+    public_member_api_docs: false

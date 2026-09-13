@@ -16,10 +16,12 @@ migrate_working_dir/
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# VS Code
+# The folder holds launch configurations and tasks. Nothing under it has ever
+# been committed here (`git ls-files` returns none), so ignoring it takes
+# nothing out of version control. This replaces a `.vs_code/` rule that never
+# matched anything -- the directory VS Code actually writes is `.vscode/`.
+.vscode/
 
 # Flutter/Dart/Pub related
 # Libraries should not include pubspec.lock, per https://dart.dev/guides/libraries/private-files#pubspeclock.
@@ -27,4 +29,6 @@ migrate_working_dir/
 **/doc/api/
 .dart_tool/
 build/
-.vs_code/
+
+# Test coverage, written by `flutter test --coverage` in CI and locally.
+coverage/

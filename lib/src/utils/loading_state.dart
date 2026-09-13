@@ -9,8 +9,10 @@ import 'package:flutter/material.dart';
 /// the widget is in a loading state.
 ///
 mixin LoadingStateMixin<T extends StatefulWidget> on State<T> {
+  /// Whether [runLoading] is currently awaiting a callback.
   final ValueNotifier<bool> isLoading = ValueNotifier(false);
 
+  /// Runs [callback] with [isLoading] held true for its duration.
   Future<void> runLoading(Future<void> Function()? callback) async {
     if (callback == null) return;
 
@@ -29,18 +31,60 @@ mixin LoadingStateMixin<T extends StatefulWidget> on State<T> {
   }
 }
 
+/// Which Material button [AutoLoadingButton] renders.
+enum AutoLoadingButtonVariant {
+  /// A filled, high-emphasis button — the primary action.
+  filled,
+
+  /// A low-emphasis text button — secondary actions such as "Resend OTP".
+  text,
+}
+
+/// A button that shows a spinner while its callback runs.
+///
+/// Drive it externally with [isLoading], or leave that null and let the button
+/// track its own [onPressed] future.
 class AutoLoadingButton extends StatefulWidget {
+  /// The label shown when not loading.
   final Widget child;
+
+  /// Runs when the button is pressed. A null callback disables the button.
   final Future<void> Function()? onPressed;
+
+  /// Shown in place of [child] while loading. Defaults to a small spinner.
   final Widget? loading;
+
+  /// The button's style.
   final ButtonStyle? style;
+
+  /// How long the swap between [child] and [loading] takes.
   final Duration? transitionDuration;
+
+  /// The curve that swap follows.
   final Curve? transitionCurve;
+
+  /// Fixed width, or null to size to the content.
   final double? width;
+
+  /// Fixed height, or null to size to the content.
   final double? height;
+
+  /// The colour of the default spinner.
   final Color? loadingColor;
+
+  /// Drives the loading state from outside. Null lets the button track its
+  /// own [onPressed] future.
   final bool? isLoading;
+
+  /// Called whenever the loading state changes.
   final VoidCallback? onLoadingStateChanged;
+
+  /// Which Material button to render. A text-styled [ButtonStyle] on a
+  /// [FilledButton] painted a filled button with text-button metrics.
+  final AutoLoadingButtonVariant variant;
+
+  /// Announced by a screen reader in place of [child].
+  final String? semanticLabel;
 
   /// Simple button that automatically handles loading state and transitions
   ///
@@ -79,6 +123,8 @@ class AutoLoadingButton extends StatefulWidget {
     this.loadingColor,
     this.isLoading,
     this.onLoadingStateChanged,
+    this.variant = AutoLoadingButtonVariant.filled,
+    this.semanticLabel,
   });
 
   @override
@@ -128,6 +174,34 @@ class _AutoLoadingButtonState extends State<AutoLoadingButton>
     );
   }
 
+  Widget _button(
+    BuildContext context, {
+    required Key key,
+    required VoidCallback? onPressed,
+    required Widget child,
+  }) {
+    final button = switch (widget.variant) {
+      AutoLoadingButtonVariant.filled => FilledButton(
+        key: key,
+        onPressed: onPressed,
+        style: widget.style,
+        child: child,
+      ),
+      AutoLoadingButtonVariant.text => TextButton(
+        key: key,
+        onPressed: onPressed,
+        style: widget.style,
+        child: child,
+      ),
+    };
+    if (widget.semanticLabel == null) return button;
+    return Semantics(
+      button: true,
+      label: widget.semanticLabel,
+      child: ExcludeSemantics(child: button),
+    );
+  }
+
   /// Build the appropriate button widget based on button type
   Widget _buildButton() {
     // Create onPressed callback only if widget.onPressed is provided
@@ -151,29 +225,31 @@ class _AutoLoadingButtonState extends State<AutoLoadingButton>
             return FadeTransition(
               opacity: animation,
               child: ScaleTransition(
-                scale: animation.drive(
-                  Tween<double>(begin: 0.95, end: 1.0),
-                ),
+                scale: animation.drive(Tween<double>(begin: 0.95, end: 1.0)),
                 child: child,
               ),
             );
           },
-          child: FilledButton(
-            key: const ValueKey<String>('button'),
-            onPressed: isLoading.value ? null : onPressedCallback,
-            style: widget.style,
-            child: loading
-                ? (widget.loading ??
-                    SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: widget.loadingColor ??
-                            Theme.of(context).colorScheme.onSurface,
-                        strokeWidth: 2,
-                      ),
-                    ))
-                : widget.child,
+          child: _button(
+            context,
+            // Keyed on the state being switched between; a constant key gave
+            // AnimatedSwitcher nothing to notice, so it never animated.
+            key: ValueKey<bool>(loading),
+            onPressed: loading ? null : onPressedCallback,
+            child:
+                loading
+                    ? (widget.loading ??
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color:
+                                widget.loadingColor ??
+                                Theme.of(context).colorScheme.onSurface,
+                            strokeWidth: 2,
+                          ),
+                        ))
+                    : widget.child,
           ),
         );
       },

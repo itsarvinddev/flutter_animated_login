@@ -1,34 +1,63 @@
 import 'package:flutter/material.dart';
 
+/// Everything about the page each screen is drawn on: the background, the card
+/// the form sits in, and how it behaves inside your own layout.
+@immutable
 class PageConfig {
-  /// The padding for the card
+  /// Padding inside the card.
   final EdgeInsetsGeometry? cardPadding;
 
-  /// The margin for the card
+  /// Margin around the card.
   final EdgeInsetsGeometry? cardMargin;
 
-  /// The constraints for the card
+  /// Size limits for the card. Defaults to a maximum width of 600.
   final BoxConstraints? cardConstraints;
 
-  /// The decoration for the card
+  /// Replaces the card's decoration entirely.
   final Decoration? cardDecoration;
 
-  /// The begin alignment for the gradient
+  /// Where the background gradient starts.
   final AlignmentGeometry begin;
 
-  /// The end alignment for the gradient
+  /// Where the background gradient ends.
   final AlignmentGeometry end;
 
-  /// The colors for the gradient on the background
+  /// The background gradient's colours.
+  ///
+  /// Any number of colours works; they are spaced evenly. Before 1.0.0 a list
+  /// that was not exactly two colours long threw at paint time.
   final List<Color>? colors;
 
-  /// The background widget for the page  (default is a gradient)
-  /// If you want to use a custom background, you can use this property.
-  /// When this property is set, the gradient is not shown.
+  /// Replaces the gradient with your own background.
   final Widget? background;
 
-  /// The behavior for the keyboard dismiss
+  /// What happens to the keyboard when the form is scrolled.
   final ScrollViewKeyboardDismissBehavior keyboardDismissBehavior;
+
+  /// Whether [FlutterAnimatedLogin] wraps the flow in a [Scaffold].
+  ///
+  /// Set false when [FlutterAnimatedLogin] is already inside your own
+  /// `Scaffold` — the default `true` nests one inside another, which paints a
+  /// second background and puts two Scaffolds under one [ScaffoldMessenger].
+  final bool useScaffold;
+
+  /// Whether to inset the card away from notches, status bars and gesture
+  /// bars.
+  final bool useSafeArea;
+
+  /// Fill colour of the [Scaffold], when [useScaffold] is set.
+  final Color? scaffoldBackgroundColor;
+
+  /// Scroll physics for the form.
+  final ScrollPhysics? scrollPhysics;
+
+  /// Rendered above the card, inside the page.
+  final Widget? pageHeader;
+
+  /// Rendered below the card, inside the page.
+  final Widget? pageFooter;
+
+  /// Creates the page's configuration.
   const PageConfig({
     this.cardPadding,
     this.cardMargin,
@@ -39,8 +68,15 @@ class PageConfig {
     this.colors,
     this.background,
     this.keyboardDismissBehavior = ScrollViewKeyboardDismissBehavior.manual,
+    this.useScaffold = true,
+    this.useSafeArea = true,
+    this.scaffoldBackgroundColor,
+    this.scrollPhysics,
+    this.pageHeader,
+    this.pageFooter,
   });
 
+  /// A copy of this configuration with the given properties replaced.
   PageConfig copyWith({
     EdgeInsetsGeometry? cardPadding,
     EdgeInsetsGeometry? cardMargin,
@@ -51,6 +87,12 @@ class PageConfig {
     List<Color>? colors,
     Widget? background,
     ScrollViewKeyboardDismissBehavior? keyboardDismissBehavior,
+    bool? useScaffold,
+    bool? useSafeArea,
+    Color? scaffoldBackgroundColor,
+    ScrollPhysics? scrollPhysics,
+    Widget? pageHeader,
+    Widget? pageFooter,
   }) {
     return PageConfig(
       cardPadding: cardPadding ?? this.cardPadding,
@@ -63,6 +105,13 @@ class PageConfig {
       background: background ?? this.background,
       keyboardDismissBehavior:
           keyboardDismissBehavior ?? this.keyboardDismissBehavior,
+      useScaffold: useScaffold ?? this.useScaffold,
+      useSafeArea: useSafeArea ?? this.useSafeArea,
+      scaffoldBackgroundColor:
+          scaffoldBackgroundColor ?? this.scaffoldBackgroundColor,
+      scrollPhysics: scrollPhysics ?? this.scrollPhysics,
+      pageHeader: pageHeader ?? this.pageHeader,
+      pageFooter: pageFooter ?? this.pageFooter,
     );
   }
 }

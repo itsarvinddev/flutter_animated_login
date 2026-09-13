@@ -1,36 +1,57 @@
 name: flutter_animated_login
 description: "A Flutter package to create a beautiful animated login screen with phone/email otp, password, and social login options. It also includes a phone number with country code picker."
-version: 0.0.15
-homepage: https://github.com/rvndsngwn/flutter_animated_login
-repository: https://github.com/rvndsngwn/flutter_animated_login
-issue_tracker: https://github.com/rvndsngwn/flutter_animated_login/issues
-documentation: https://github.com/rvndsngwn/flutter_animated_login/blob/master/README.md
+version: 1.0.0
+homepage: https://github.com/itsarvinddev/flutter_animated_login
+repository: https://github.com/itsarvinddev/flutter_animated_login
+issue_tracker: https://github.com/itsarvinddev/flutter_animated_login/issues
+documentation: https://github.com/itsarvinddev/flutter_animated_login#readme
+funding:
+  - https://github.com/sponsors/itsarvinddev
 screenshots:
-  - description: "Login Screen with Phone/Email"
-    path: image-1.png
-  - description: "OTP Verification Screen"
-    path: image-2.png
+  - description: "Sign in with an email address or a phone number"
+    path: screenshots/login-email.webp
+  - description: "One-time code screen with resend countdown"
+    path: screenshots/otp.webp
+  - description: "Sign up with extra fields, a password strength meter and consent"
+    path: screenshots/signup.webp
+  - description: "Branded full-width social sign-in buttons"
+    path: screenshots/social-buttons.webp
+  - description: "Dark mode"
+    path: screenshots/dark-mode.webp
+  - description: "Wide layout on tablet, desktop and web"
+    path: screenshots/tablet.webp
 
 topics:
-  - flutter-login
-  - flutter-animated-login
-  - flutter-login-screen
-  - flutter-login-ui
-  - animated-login
+  - login
+  - authentication
+  - otp
+  - forms
+  - ui
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
-  flutter: ">=3.10.0"
+  # Flutter 3.29 is the real floor, verified by a CI leg that builds on it:
+  #   - TextFormField.stylusHandwritingEnabled landed in 3.29 (3.27 only
+  #     deprecated the old scribbleEnabled, without shipping the replacement);
+  #   - TapRegionUpCallback landed in 3.29, and pinput 6 uses it, so pinput
+  #     cannot compile below 3.29 despite declaring ">=3.7.0" itself;
+  #   - Color.withValues landed in 3.27, which the package already used while
+  #     declaring 3.10 -- a floor that could never have compiled.
+  sdk: ">=3.7.0 <4.0.0"
+  flutter: ">=3.29.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  flutter_intl_phone_field: ^0.0.7
-  pinput: ^5.0.1
-  signals: ^6.0.2
+  flutter_intl_phone_field: ^0.1.0
+  # Declared rather than taken from flutter/foundation: that library only
+  # began re-exporting `internal` in Flutter 3.35, well above this floor.
+  meta: ^1.15.0
+  pinput: ^6.0.2
 
 dev_dependencies:
-  flutter_lints: ^5.0.0
+  # A range, not a caret: 6.x needs Dart 3.8, while this package supports
+  # Flutter 3.29 (Dart 3.7). CI lints on the newest stable, which picks 6.x.
+  flutter_lints: ">=5.0.0 <7.0.0"
   flutter_test:
     sdk: flutter
 
