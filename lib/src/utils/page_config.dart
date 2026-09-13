@@ -34,11 +34,11 @@ class PageConfig {
   /// What happens to the keyboard when the form is scrolled.
   final ScrollViewKeyboardDismissBehavior keyboardDismissBehavior;
 
-  /// Whether each screen provides its own [Scaffold].
+  /// Whether [FlutterAnimatedLogin] wraps the flow in a [Scaffold].
   ///
   /// Set false when [FlutterAnimatedLogin] is already inside your own
   /// `Scaffold` — the default `true` nests one inside another, which paints a
-  /// second background and gives you two [ScaffoldMessenger]s.
+  /// second background and puts two Scaffolds under one [ScaffoldMessenger].
   final bool useScaffold;
 
   /// Whether to inset the card away from notches, status bars and gesture

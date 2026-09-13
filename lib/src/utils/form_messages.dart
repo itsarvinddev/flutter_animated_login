@@ -218,7 +218,7 @@ class FormMessages {
   /// Separator between the credential form and the social login buttons.
   final String orDivider;
 
-  /// Shown when [ConsentConfig.required] is set and the box is not ticked.
+  /// Shown when [ConsentConfig.isRequired] is set and the box is not ticked.
   final String consentRequired;
 
   /// Label of the control that switches the login screen to one-time codes.

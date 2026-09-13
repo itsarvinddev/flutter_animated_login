@@ -214,14 +214,24 @@ extension Tost on BuildContext {
 /// seconds. Only a SnackBar this tracker showed, and that is still open, is
 /// dismissed: a message the app shows from its own callback is left alone.
 class ScreenErrorSnackBar {
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason>? _current;
   bool _open = false;
 
   /// Shows [description] as an error.
   void show(BuildContext context, String title, {String? description}) {
+    // Remove this tracker's previous error outright. Merely hiding it left the
+    // new one queued behind its exit animation, so a success in that window
+    // hid the old error again and the new one then slid in after sign-in.
+    if (_open) ScaffoldMessenger.maybeOf(context)?.removeCurrentSnackBar();
     final controller = context.error(title, description: description);
     if (controller == null) return;
+    _current = controller;
     _open = true;
-    controller.closed.whenComplete(() => _open = false);
+    // Showing a second error hides the first, whose `closed` completes while
+    // the second is still on screen; only the newest one may clear the flag.
+    controller.closed.whenComplete(() {
+      if (identical(_current, controller)) _open = false;
+    });
   }
 
   /// Hides the error this tracker showed, if it is still on screen.
@@ -232,6 +242,7 @@ class ScreenErrorSnackBar {
   void dismiss(BuildContext context) {
     if (!_open) return;
     _open = false;
+    _current = null;
     ScaffoldMessenger.maybeOf(context)?.hideCurrentSnackBar();
   }
 }
@@ -246,12 +257,18 @@ class ScreenErrorSnackBar {
 /// frame, so the check waits one frame and then skips the reset when this
 /// route is no longer the current one.
 void resetUnlessNavigatedAway(BuildContext context, VoidCallback reset) {
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    if (!context.mounted) return;
-    final route = ModalRoute.of(context);
-    if (route != null && !route.isCurrent) return;
-    reset();
-  });
+  WidgetsBinding.instance
+    ..addPostFrameCallback((_) {
+      if (!context.mounted) return;
+      final route = ModalRoute.of(context);
+      if (route != null && !route.isCurrent) return;
+      reset();
+    })
+    // A post-frame callback waits for a frame but does not ask for one. After
+    // a code is verified nothing else may: the keyboard is already closed and
+    // the resend countdown may have finished, so the code screen stayed up
+    // until something unrelated repainted.
+    ..scheduleFrame();
 }
 
 /// Cross-fades between the screens of the login flow.
@@ -292,7 +309,7 @@ class AnimatedStack extends StatelessWidget {
       duration: duration,
       switchInCurve: switchInCurve,
       switchOutCurve: switchOutCurve,
-      transitionBuilder: transitionBuilder,
+      transitionBuilder: _recording(transitionBuilder),
       // Keep the outgoing screen out of focus, the semantics tree and hit
       // testing while it fades away.
       //
@@ -307,7 +324,10 @@ class AnimatedStack extends StatelessWidget {
           (currentChild, previousChildren) => Stack(
             alignment: Alignment.center,
             children: <Widget>[
-              for (final child in previousChildren)
+              for (final child in _mostVisiblePerKey(
+                previousChildren,
+                currentChild,
+              ))
                 _shield(child, active: false),
               if (currentChild != null) _shield(currentChild, active: true),
             ],
@@ -317,6 +337,62 @@ class AnimatedStack extends StatelessWidget {
         child: builder(context, value),
       ),
     );
+  }
+
+  /// Keeps one outgoing entry per key: the most visible one.
+  ///
+  /// Going login -> signup -> login -> signup within one transition leaves two
+  /// outgoing login entries. AnimatedSwitcher only filters out entries keyed
+  /// like the current child, and [_shield] keys its wrapper like the child, so
+  /// the two gave the Stack duplicate keys ("Duplicate keys found") and every
+  /// later frame threw. Every outgoing entry fades at the same rate, so the
+  /// one with the highest animation value covers the other and outlasts it;
+  /// keeping the newest instead let the older one reappear once the newer had
+  /// faded out.
+  static List<Widget> _mostVisiblePerKey(
+    List<Widget> previous,
+    Widget? current,
+  ) {
+    final currentKey = current?.key;
+    final best = <Key, int>{};
+    for (var i = 0; i < previous.length; i++) {
+      final key = previous[i].key;
+      if (key == null || key == currentKey) continue;
+      final kept = best[key];
+      if (kept == null ||
+          _visibility(previous[i]) >= _visibility(previous[kept])) {
+        best[key] = i;
+      }
+    }
+    return <Widget>[
+      for (var i = 0; i < previous.length; i++)
+        if (previous[i].key == null ||
+            (previous[i].key != currentKey && best[previous[i].key] == i))
+          previous[i],
+    ];
+  }
+
+  static final Expando<Animation<double>> _animationOf = Expando();
+  static final Expando<Widget Function(Widget, Animation<double>)>
+  _recordingBuilders = Expando();
+
+  /// Wraps [builder] so each transition remembers its animation. Cached per
+  /// builder, so AnimatedSwitcher sees the same function on every rebuild and
+  /// does not rebuild its transitions.
+  static Widget Function(Widget, Animation<double>) _recording(
+    Widget Function(Widget, Animation<double>) builder,
+  ) =>
+      _recordingBuilders[builder] ??= (child, animation) {
+        final transition = builder(child, animation);
+        _animationOf[transition] = animation;
+        return transition;
+      };
+
+  /// How visible an outgoing entry still is. AnimatedSwitcher hands the
+  /// layout builder each transition wrapped in a [KeyedSubtree].
+  static double _visibility(Widget entry) {
+    final transition = entry is KeyedSubtree ? entry.child : entry;
+    return _animationOf[transition]?.value ?? 0;
   }
 
   static Widget _shield(Widget child, {required bool active}) => ExcludeFocus(

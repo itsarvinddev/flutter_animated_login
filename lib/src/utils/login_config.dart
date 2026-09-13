@@ -214,8 +214,9 @@ class EmailPhoneTextFiledConfig {
 
   /// Called when the enclosing [Form] is saved.
   ///
-  /// `number` is the parsed phone number in phone mode and `null` in email
-  /// mode; `value` is always the raw text the user typed.
+  /// In email mode `number` is `null` and `value` is the raw text the user
+  /// typed. In phone mode `number` is the parsed phone number and `value` is
+  /// its national digits, [PhoneNumber.number].
   final FormFieldSetter<({PhoneNumber? number, String? value})>? onSaved;
 
   /// Called on every keystroke, with the same payload as [onSaved].

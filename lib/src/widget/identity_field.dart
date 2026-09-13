@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 import '../../flutter_animated_login.dart';
 import '../utils/extension.dart';
@@ -78,7 +79,15 @@ class _IdentityFieldState extends State<IdentityField> {
   // the shared controller was notified while deactivated: "Looking up a
   // deactivated widget's ancestor is unsafe". Mirroring only while in email
   // mode keeps the outgoing email field out of that notification entirely.
-  final TextEditingController _emailController = TextEditingController();
+  TextEditingController _emailController = TextEditingController();
+
+  // The phone field is mirrored the same way. IntlPhoneField assigns its
+  // controller's text as it mounts, which resets the selection and so notifies
+  // even when the text is unchanged. On a step change (login -> signup) the
+  // outgoing screen's phone field still listened to the shared controller and
+  // was marked dirty in the middle of the incoming screen's build:
+  // "setState() or markNeedsBuild() called during build".
+  TextEditingController _phoneController = TextEditingController();
   late TextEditingController _shared;
 
   @override
@@ -86,8 +95,12 @@ class _IdentityFieldState extends State<IdentityField> {
     super.initState();
     _shared = controller.identifierController;
     _emailController.value = _shared.value;
-    _shared.addListener(_sharedToEmail);
+    _phoneController.value = _shared.value;
+    _shared
+      ..addListener(_sharedToEmail)
+      ..addListener(_sharedToPhone);
     _emailController.addListener(_emailToShared);
+    _phoneController.addListener(_phoneToShared);
   }
 
   @override
@@ -95,10 +108,28 @@ class _IdentityFieldState extends State<IdentityField> {
     super.didUpdateWidget(oldWidget);
     final next = controller.identifierController;
     if (!identical(next, _shared)) {
-      _shared.removeListener(_sharedToEmail);
+      _shared
+        ..removeListener(_sharedToEmail)
+        ..removeListener(_sharedToPhone);
       _shared = next;
-      _shared.addListener(_sharedToEmail);
-      _emailController.value = _shared.value;
+      _shared
+        ..addListener(_sharedToEmail)
+        ..addListener(_sharedToPhone);
+      // Hand the fields fresh mirrors seeded from the new controller rather
+      // than writing the current ones. A mounted TextFormField answers a write
+      // with FormFieldState.didChange, which rebuilds the enclosing Form in the
+      // middle of this build; a changed controller is adopted quietly.
+      final oldEmail = _emailController..removeListener(_emailToShared);
+      final oldPhone = _phoneController..removeListener(_phoneToShared);
+      _emailController = TextEditingController.fromValue(_shared.value)
+        ..addListener(_emailToShared);
+      _phoneController = TextEditingController.fromValue(_shared.value)
+        ..addListener(_phoneToShared);
+      // The fields let go of the old ones as they rebuild in this frame.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        oldEmail.dispose();
+        oldPhone.dispose();
+      });
     }
   }
 
@@ -114,6 +145,65 @@ class _IdentityFieldState extends State<IdentityField> {
     _shared.value = _emailController.value;
   }
 
+  void _sharedToPhone() {
+    // In email mode the phone field is gone or going; leave it alone.
+    if (!(_wasPhone ?? true)) return;
+    if (_phoneController.value == _shared.value) return;
+    _phoneController.value = _shared.value;
+  }
+
+  void _phoneToShared() {
+    if (_shared.value == _phoneController.value) return;
+    final building =
+        SchedulerBinding.instance.schedulerPhase ==
+        SchedulerPhase.persistentCallbacks;
+    if (!building) {
+      _shared.value = _phoneController.value;
+      return;
+    }
+    // Written from a build, which is IntlPhoneField mounting. A selection-only
+    // change concerns no one else; a reformatted text waits for the frame to
+    // finish, so no other field is rebuilt in the middle of this one.
+    if (_shared.text == _phoneController.text) return;
+    WidgetsBinding.instance
+      ..addPostFrameCallback((_) {
+        if (mounted) _phoneToShared();
+      })
+      ..scheduleFrame();
+  }
+
+  /// The digits after the selected country's calling code when [text] is
+  /// written with a leading '+', or null when it is not.
+  String? _nationalDigits(String text) {
+    final trimmed = text.trim();
+    if (!trimmed.startsWith('+')) return null;
+    final country = CountryResolver.instance.byIsoCode(
+      controller.countryIsoCode,
+    );
+    final digits = trimmed.replaceAll(RegExp(r'\D'), '');
+    if (country == null || !digits.startsWith(country.fullCountryCode)) {
+      return null;
+    }
+    return digits.substring(country.fullCountryCode.length);
+  }
+
+  /// How IntlPhoneField should read the text it finds when it mounts.
+  ///
+  /// [EmailPhoneTextFiledConfig.initialValueFormat] describes the initial
+  /// value only. Once the field has rewritten the seed, or the user has typed,
+  /// the shared text is a national number that later mounts (login -> signup,
+  /// back from the code screen) read again, and `international` stripped a
+  /// real leading "39" from an Italian number. Anything else is read as
+  /// `auto`, which still honours a leading `+` or `00` from prefill().
+  InitialValueFormat get _phoneTextFormat {
+    final format = config.initialValueFormat;
+    if (format != InitialValueFormat.international) return format;
+    final seed = config.initialValue;
+    return seed != null && _shared.text == seed
+        ? format
+        : InitialValueFormat.auto;
+  }
+
   FocusNode get _emailFocus =>
       config.focusNode ??
       (_ownedEmailFocus ??= FocusNode(debugLabel: 'IdentityField.email'));
@@ -124,9 +214,13 @@ class _IdentityFieldState extends State<IdentityField> {
 
   @override
   void dispose() {
-    _shared.removeListener(_sharedToEmail);
+    _shared
+      ..removeListener(_sharedToEmail)
+      ..removeListener(_sharedToPhone);
     _emailController.removeListener(_emailToShared);
     _emailController.dispose();
+    _phoneController.removeListener(_phoneToShared);
+    _phoneController.dispose();
     _ownedEmailFocus?.dispose();
     _ownedPhoneFocus?.dispose();
     super.dispose();
@@ -178,6 +272,25 @@ class _IdentityFieldState extends State<IdentityField> {
       // Catch up on anything typed in phone mode. The copy back to the shared
       // controller is equal, so it notifies no one.
       _emailController.value = _shared.value;
+    }
+    if (isPhone) {
+      // Likewise for anything typed in email mode, before the phone field
+      // mounts and reads it. An international number ("+447") is handed over
+      // as its national digits: the controller has already selected its
+      // country, and IntlPhoneField would read a partial number's calling
+      // code as national digits. Only the text is compared, because a
+      // TextFormField rebuilds its Form whenever its text changes.
+      final national = _nationalDigits(_shared.text);
+      final text = national ?? _shared.text;
+      if (_phoneController.text != text) {
+        _phoneController.value =
+            national == null
+                ? _shared.value
+                : TextEditingValue(
+                  text: national,
+                  selection: TextSelection.collapsed(offset: national.length),
+                );
+      }
     }
     return isPhone ? _buildPhone(context) : _buildEmail(context);
   }
@@ -314,7 +427,7 @@ class _IdentityFieldState extends State<IdentityField> {
     return IntlPhoneField(
       key: const ValueKey<String>('flutter_animated_login.identity.phone'),
       formFieldKey: config.formFieldKey,
-      controller: controller.identifierController,
+      controller: _phoneController,
       phoneController: config.phoneController,
       focusNode: _phoneFocus,
       // The controller owns the country: a flow controller created by the
@@ -322,8 +435,11 @@ class _IdentityFieldState extends State<IdentityField> {
       // one you pass starts from its own. Preferring the config here meant
       // reset() could restore the controller's country but never the picker's.
       initialCountryCode: controller.countryIsoCode,
-      initialValue: config.initialValue,
-      initialValueFormat: config.initialValueFormat,
+      // No initialValue: IntlPhoneField writes it into the shared controller
+      // on every mount, so each email/phone swap or step change overwrote what
+      // the user typed. A flow controller the widget creates is already seeded
+      // from it, and IntlPhoneField reads that text when it mounts.
+      initialValueFormat: _phoneTextFormat,
       languageCode: config.languageCode,
       enabled: config.enabled,
       readOnly: config.readOnly,

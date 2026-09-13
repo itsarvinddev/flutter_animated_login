@@ -308,7 +308,12 @@ class FlutterAnimatedLoginController extends ChangeNotifier {
     String? password,
     Map<String, String>? additionalFields,
   }) {
-    if (identifier != null) _identifierController.text = identifier;
+    if (identifier != null) {
+      _identifierController.text = identifier;
+      // The field reports a parsed number only as the user types; until it
+      // does, phoneNumber and identifier are read from the new text.
+      _phoneNumber = null;
+    }
     if (countryIsoCode != null) _countryIsoCode = countryIsoCode;
     if (password != null) _passwordController.text = password;
     if (additionalFields != null) {
@@ -431,7 +436,21 @@ class FlutterAnimatedLoginController extends ChangeNotifier {
       _isPhone = false;
       return;
     }
-    _isPhone = !text.contains('@') && text.looksLikePhone;
+    final looksLikePhone = !text.contains('@') && text.looksLikePhone;
+    if (looksLikePhone && !_isPhone && text.startsWith('+')) {
+      // An international number typed key by key. Switching at "+4" mounted
+      // the phone field on the old country with "4" as a national digit, so
+      // "+447700900123" was sent as +14477009001. Stay in email mode until the
+      // calling code and a first national digit are known, then select that
+      // country; the field strips the code as it swaps.
+      final parsed = PhoneNumber.fromCompleteNumber(completeNumber: text);
+      if (parsed.countryISOCode.isEmpty || parsed.number.isEmpty) {
+        _isPhone = false;
+        return;
+      }
+      _countryIsoCode = parsed.countryISOCode;
+    }
+    _isPhone = looksLikePhone;
   }
 
   bool _notifyScheduled = false;
