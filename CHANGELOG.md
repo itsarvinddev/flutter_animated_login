@@ -5,6 +5,31 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-09-13
+
+### Fixed
+
+- **Changing the country from code no longer reports an error.** With
+  `formatInput` on, `controller.prefill(countryIsoCode: ...)`, `reset()` to a
+  different initial country, or a rebuild that turns `formatInput` on or off,
+  logged "setState() or markNeedsBuild() called during build" in debug builds
+  while the phone field reformatted the number. So did prefilling an
+  international number (`+1...`) while the phone field was shown.
+- **A success dismisses an error shown by an earlier copy of a screen.** A
+  wrong code, then Edit, Continue and the right code left "That code is
+  incorrect" on screen, because each screen tracked only the errors it had
+  shown itself. The screens of a `FlutterAnimatedLogin` now share one tracker.
+- **No flash of the empty form before a late redirect.** When the app moves
+  to its home screen shortly after `onLogin`, `onSignup`, `onResetPassword`
+  or `onVerify` returns, for example from an auth listener, the flow used to
+  reset first and the outgoing route cross-faded back to an empty form. It
+  now waits 150 ms for the app to navigate before resetting. While it waits the
+  form stays busy, so it cannot be submitted again, and a step the app opens
+  in the meantime (signup for a new user, say) is kept.
+- **The keyboard's action key no longer submits twice.** Pressing Done again
+  while `onLogin`, `onSignup` or `onResetPassword` was still running called it
+  a second time; only the button was disabled.
+
 ## [1.0.0] - 2026-09-13
 
 The flow's state moved out of process-wide globals and into a per-instance

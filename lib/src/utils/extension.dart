@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../controller.dart';
+
 import 'theme.dart';
 
 /// Formatting helpers for the one-time-code countdown.
@@ -206,14 +208,28 @@ extension Tost on BuildContext {
   }
 }
 
-/// Shows a screen's errors and dismisses the last one once that screen
+/// Shows the flow's errors and dismisses the last one once any screen
 /// succeeds.
 ///
 /// Without this, entering a wrong code and then the right one left
 /// "That code is incorrect" on screen over the app's home page for up to four
 /// seconds. Only a SnackBar this tracker showed, and that is still open, is
 /// dismissed: a message the app shows from its own callback is left alone.
+///
+/// One tracker serves every screen of a [FlutterAnimatedLogin], through
+/// [ScreenErrorScope]. A tracker per screen missed an error shown by a
+/// previous instance of the screen: a wrong code, Edit, Continue and the
+/// right code left the error up, because the new code screen's tracker had
+/// never shown it.
 class ScreenErrorSnackBar {
+  /// The tracker of the nearest [FlutterAnimatedLogin], or one kept for
+  /// [context] when the screen is used on its own.
+  static ScreenErrorSnackBar of(BuildContext context) =>
+      context.getInheritedWidgetOfExactType<ScreenErrorScope>()?.errors ??
+      (_standalone[context] ??= ScreenErrorSnackBar());
+
+  static final Expando<ScreenErrorSnackBar> _standalone = Expando();
+
   ScaffoldFeatureController<SnackBar, SnackBarClosedReason>? _current;
   bool _open = false;
 
@@ -247,29 +263,81 @@ class ScreenErrorSnackBar {
   }
 }
 
+/// Shares one [ScreenErrorSnackBar] between the screens below it.
+class ScreenErrorScope extends InheritedWidget {
+  /// Makes [errors] the tracker for the screens in [child].
+  const ScreenErrorScope({
+    super.key,
+    required this.errors,
+    required super.child,
+  });
+
+  /// The shared tracker.
+  final ScreenErrorSnackBar errors;
+
+  @override
+  bool updateShouldNotify(ScreenErrorScope oldWidget) =>
+      !identical(errors, oldWidget.errors);
+}
+
 /// Runs [reset] after a successful sign-in, unless the host has already moved
 /// on.
 ///
 /// Hosts very often navigate to their home screen from inside onLogin or
 /// onVerify. Resetting immediately made the outgoing screen cross-fade back to
 /// an empty login form while the next route animated in. Declarative routers
-/// (go_router's `context.go`, an auth redirect) only swap routes on a later
-/// frame, so the check waits one frame and then skips the reset when this
-/// route is no longer the current one.
-void resetUnlessNavigatedAway(BuildContext context, VoidCallback reset) {
-  WidgetsBinding.instance
-    ..addPostFrameCallback((_) {
-      if (!context.mounted) return;
-      final route = ModalRoute.of(context);
-      if (route != null && !route.isCurrent) return;
-      reset();
-    })
-    // A post-frame callback waits for a frame but does not ask for one. After
-    // a code is verified nothing else may: the keyboard is already closed and
-    // the resend countdown may have finished, so the code screen stayed up
-    // until something unrelated repainted.
+/// (go_router's `context.go`, an auth redirect) swap routes on a later frame,
+/// and an auth listener may do so a little after the callback returns, so the
+/// reset waits [resetGracePeriod] of frames. It is skipped as soon as this
+/// route is no longer the current one, or the app has moved the flow to
+/// another step (a new user sent from the code screen to signup, say).
+///
+/// While it waits [controller] stays busy, so the still-filled form cannot be
+/// submitted a second time.
+void resetUnlessNavigatedAway(
+  BuildContext context,
+  FlutterAnimatedLoginController controller,
+  VoidCallback reset,
+) {
+  final binding = WidgetsBinding.instance;
+  final step = controller.step;
+  Duration? firstFrame;
+
+  void check(Duration timeStamp) {
+    final route = context.mounted ? ModalRoute.of(context) : null;
+    final stayed =
+        context.mounted &&
+        (route == null || route.isCurrent) &&
+        controller.step == step;
+    if (!stayed) {
+      // Safe on a disposed controller: it no longer notifies.
+      controller.setBusy(false);
+      return;
+    }
+    final start = firstFrame ??= timeStamp;
+    if (timeStamp - start < resetGracePeriod) {
+      controller.setBusy(true);
+      binding
+        ..addPostFrameCallback(check)
+        ..scheduleFrame();
+      return;
+    }
+    controller.setBusy(false);
+    reset();
+  }
+
+  // Frames rather than a Timer: a timer outlives a disposed widget and keeps
+  // widget tests from finishing. A post-frame callback also waits for a frame
+  // without asking for one, and after a code is verified nothing else may:
+  // the keyboard is closed and the resend countdown may have finished, so
+  // each step schedules its own.
+  binding
+    ..addPostFrameCallback(check)
     ..scheduleFrame();
 }
+
+/// How long [resetUnlessNavigatedAway] waits for the host to navigate away.
+const Duration resetGracePeriod = Duration(milliseconds: 150);
 
 /// Cross-fades between the screens of the login flow.
 class AnimatedStack extends StatelessWidget {

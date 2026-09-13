@@ -120,17 +120,59 @@ class _IdentityFieldState extends State<IdentityField> {
       // with FormFieldState.didChange, which rebuilds the enclosing Form in the
       // middle of this build; a changed controller is adopted quietly.
       final oldEmail = _emailController..removeListener(_emailToShared);
-      final oldPhone = _phoneController..removeListener(_phoneToShared);
       _emailController = TextEditingController.fromValue(_shared.value)
         ..addListener(_emailToShared);
-      _phoneController = TextEditingController.fromValue(_shared.value)
-        ..addListener(_phoneToShared);
-      // The fields let go of the old ones as they rebuild in this frame.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        oldEmail.dispose();
-        oldPhone.dispose();
-      });
+      // The field lets go of the old one as it rebuilds in this frame.
+      WidgetsBinding.instance.addPostFrameCallback((_) => oldEmail.dispose());
+      _renewPhoneMirror(_shared.value);
     }
+    final was = oldWidget.config;
+    final listsReplaced =
+        was.countries != config.countries ||
+        was.onlyCountries != config.onlyCountries ||
+        was.excludeCountries != config.excludeCountries;
+    // IntlPhoneField only rewrites for new lists when they exclude the
+    // selected country. Renewing on every new list instance -- a config
+    // built without const -- swapped the controller on each host rebuild and
+    // cleared the field's undo history.
+    final selected = _builtCountry ?? controller.countryIsoCode;
+    if (was.formatInput != config.formatInput ||
+        (listsReplaced && !_allowsCountry(config, selected))) {
+      _phoneFieldRewritesOnUpdate = true;
+    }
+  }
+
+  static bool _allowsCountry(EmailPhoneTextFiledConfig config, String code) {
+    final wanted = code.toUpperCase();
+    final all = config.countries;
+    if (all != null && all.isNotEmpty && !all.any((c) => c.code == wanted)) {
+      return false;
+    }
+    final only = config.onlyCountries;
+    if (only != null &&
+        only.isNotEmpty &&
+        !only.any((c) => c.toUpperCase() == wanted)) {
+      return false;
+    }
+    final excluded = config.excludeCountries;
+    return excluded == null || !excluded.any((c) => c.toUpperCase() == wanted);
+  }
+
+  // IntlPhoneField (0.1.1) rewrites its controller from didUpdateWidget, in
+  // the middle of the build, when its country, formatInput or country list
+  // changes -- and its TextFormField then rebuilds the enclosing Form:
+  // "setState() or markNeedsBuild() called during build". Handing it a fresh
+  // mirror in the same update means those writes land on a controller no
+  // mounted field listens to yet; the TextFormField adopts it quietly.
+  bool _phoneFieldRewritesOnUpdate = false;
+  String? _builtCountry;
+  String? _reportedCountry;
+
+  void _renewPhoneMirror(TextEditingValue seed) {
+    final old = _phoneController..removeListener(_phoneToShared);
+    _phoneController = TextEditingController.fromValue(seed)
+      ..addListener(_phoneToShared);
+    WidgetsBinding.instance.addPostFrameCallback((_) => old.dispose());
   }
 
   void _sharedToEmail() {
@@ -267,7 +309,26 @@ class _IdentityFieldState extends State<IdentityField> {
   @override
   Widget build(BuildContext context) {
     final isPhone = _isPhone;
+    final phoneFieldMounted = _wasPhone ?? false;
     _carryFocusAcrossSwap(isPhone);
+    if (isPhone) {
+      final country = controller.countryIsoCode;
+      // A report from an earlier phone field, before a swap to email, says
+      // nothing about the one mounting now.
+      if (!phoneFieldMounted) _reportedCountry = null;
+      // A country the field did not report itself: prefill(), reset() or a
+      // detected international number.
+      final countryFromOutside =
+          _builtCountry != null &&
+          country != _builtCountry &&
+          country != _reportedCountry;
+      if (phoneFieldMounted &&
+          (countryFromOutside || _phoneFieldRewritesOnUpdate)) {
+        _renewPhoneMirror(_phoneController.value);
+      }
+      _builtCountry = country;
+    }
+    _phoneFieldRewritesOnUpdate = false;
     if (!isPhone && _emailController.value != _shared.value) {
       // Catch up on anything typed in phone mode. The copy back to the shared
       // controller is equal, so it notifies no one.
@@ -283,13 +344,22 @@ class _IdentityFieldState extends State<IdentityField> {
       final national = _nationalDigits(_shared.text);
       final text = national ?? _shared.text;
       if (_phoneController.text != text) {
-        _phoneController.value =
+        final value =
             national == null
                 ? _shared.value
                 : TextEditingValue(
                   text: national,
                   selection: TextSelection.collapsed(offset: national.length),
                 );
+        if (phoneFieldMounted) {
+          // A mounted TextFormField answers a write with a Form rebuild in the
+          // middle of this build (prefill of "+1..." while the field is
+          // shown); a fresh mirror is adopted quietly.
+          _renewPhoneMirror(value);
+          _phoneToShared();
+        } else {
+          _phoneController.value = value;
+        }
       }
     }
     return isPhone ? _buildPhone(context) : _buildEmail(context);
@@ -519,12 +589,16 @@ class _IdentityFieldState extends State<IdentityField> {
       onTap: config.onTap,
       onTapOutside: config.onTapOutside,
       onEditingComplete: config.onEditingComplete,
-      onCountryChanged: config.onCountryChanged,
+      onCountryChanged: (country) {
+        _reportedCountry = country.code;
+        config.onCountryChanged?.call(country);
+      },
       onSubmitted: (value) {
         config.onSubmitted?.call(value);
         onSubmitted?.call(value);
       },
       onChanged: (phone) {
+        _reportedCountry = phone.countryISOCode;
         controller.updatePhoneNumber(phone);
         config.onChanged?.call((number: phone, value: phone.number));
       },

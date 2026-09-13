@@ -42,13 +42,16 @@ class FlutterAnimatedReset extends StatefulWidget {
 }
 
 class _FlutterAnimatedResetState extends State<FlutterAnimatedReset> {
-  final ScreenErrorSnackBar _errors = ScreenErrorSnackBar();
+  ScreenErrorSnackBar get _errors => ScreenErrorSnackBar.of(context);
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   FlutterAnimatedLoginController get controller => widget.controller;
   FormMessages get messages => widget.loginConfig.messages;
 
   Future<String?> _submit() async {
+    // The keyboard's action key reaches here even while the button is
+    // disabled: during a request, or while a successful flow waits to reset.
+    if (controller.isBusy) return null;
     if (!(_formKey.currentState?.validate() ?? false)) {
       _errors.show(
         context,
@@ -76,7 +79,7 @@ class _FlutterAnimatedResetState extends State<FlutterAnimatedReset> {
         description: messages.resetLinkSent,
       );
       if (widget.config.returnToLoginOnSuccess) {
-        resetUnlessNavigatedAway(context, () {
+        resetUnlessNavigatedAway(context, controller, () {
           _formKey.currentState?.reset();
           controller.reset();
         });

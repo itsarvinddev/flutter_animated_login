@@ -1333,4 +1333,492 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(c.step, LoginStep.signup);
   });
+
+  // ---------------------------------------------------------------- 1.0.1
+
+  testWidgets('a programmatic country change with formatInput does not throw', (
+    tester,
+  ) async {
+    const phoneField = ValueKey<String>(
+      'flutter_animated_login.identity.phone',
+    );
+    String shown() =>
+        tester
+            .widget<EditableText>(
+              find.descendant(
+                of: find.byKey(phoneField),
+                matching: find.byType(EditableText),
+              ),
+            )
+            .controller
+            .text;
+
+    // prefill() switches the country while a number is typed.
+    final host = TextEditingController();
+    addTearDown(host.dispose);
+    final c = FlutterAnimatedLoginController(
+      identifierController: host,
+      initialCountryCode: 'IN',
+    );
+    addTearDown(c.dispose);
+    await tester.pumpWidget(
+      _app(
+        FlutterAnimatedLogin(
+          controller: c,
+          loginConfig: const LoginConfig(
+            loginFieldInputType: LoginFieldInputType.phone,
+            textFiledConfig: EmailPhoneTextFieldConfig(formatInput: true),
+          ),
+          onLogin: (_) async => 'stop',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(phoneField), '2125550100');
+    await tester.pumpAndSettle();
+    c.prefill(countryIsoCode: 'US');
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(shown(), '(212) 555-0100');
+    expect(host.text, '(212) 555-0100');
+    expect(c.identifier, '+12125550100');
+
+    // A host rebuild turns formatting on.
+    final host2 = TextEditingController();
+    addTearDown(host2.dispose);
+    final c2 = FlutterAnimatedLoginController(
+      identifierController: host2,
+      initialCountryCode: 'US',
+    );
+    addTearDown(c2.dispose);
+    Widget app(bool formatInput) => _app(
+      FlutterAnimatedLogin(
+        key: const ValueKey<String>('toggle'),
+        controller: c2,
+        loginConfig: LoginConfig(
+          loginFieldInputType: LoginFieldInputType.phone,
+          textFiledConfig: EmailPhoneTextFieldConfig(formatInput: formatInput),
+        ),
+        onLogin: (_) async => 'stop',
+      ),
+    );
+    await tester.pumpWidget(app(false));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(phoneField), '2125550100');
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(app(true));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    await tester.pumpAndSettle();
+    expect(shown(), '(212) 555-0100');
+    expect(host2.text, '(212) 555-0100');
+  });
+
+  testWidgets('success on a rebuilt code screen dismisses the earlier error', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1000, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final c = FlutterAnimatedLoginController();
+    addTearDown(c.dispose);
+    await tester.pumpWidget(
+      _app(
+        FlutterAnimatedLogin(
+          controller: c,
+          loginConfig: const LoginConfig(
+            loginFieldInputType: LoginFieldInputType.email,
+          ),
+          verifyConfig: const VerifyConfig(startCooldownOnOpen: false),
+          onLogin: (_) async => null,
+          onVerify:
+              (d) async =>
+                  d.secret == '123456' ? null : 'That code is incorrect',
+        ),
+      ),
+    );
+    c.prefill(identifier: 'ada@lovelace.dev');
+    c.showOtp();
+    await tester.pumpAndSettle();
+
+    Future<void> frames(int ms) async {
+      for (var t = 0; t < ms; t += 16) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+    }
+
+    await tester.showKeyboard(find.byType(EditableText).first);
+    tester.testTextInput.enterText('000000');
+    await frames(500);
+    expect(find.text('That code is incorrect'), findsOneWidget);
+
+    // Edit goes back to the login screen; Continue builds a new code screen.
+    await tester.tapOnText(find.textRange.ofSubstring('Edit'));
+    await frames(400);
+    expect(c.step, LoginStep.login);
+    await tester.tap(find.byType(FilledButton).first);
+    await frames(400);
+    expect(c.step, LoginStep.verify);
+
+    await tester.showKeyboard(find.byType(EditableText).first);
+    tester.testTextInput.enterText('123456');
+    await frames(800);
+    expect(c.step, LoginStep.login);
+    expect(find.text('That code is incorrect'), findsNothing);
+  });
+
+  group('an auth redirect a few frames after success', () {
+    for (final step in [
+      LoginStep.login,
+      LoginStep.signup,
+      LoginStep.resetPassword,
+      LoginStep.verify,
+    ]) {
+      for (final redirect in [true, false]) {
+        testWidgets(
+          '${step.name}: ${redirect ? 'no flash back to the form' : 'still resets without one'}',
+          (tester) async {
+            tester.view.physicalSize = const Size(1000, 2400);
+            tester.view.devicePixelRatio = 1;
+            addTearDown(tester.view.reset);
+            final signedIn = ValueNotifier<bool>(false);
+            addTearDown(signedIn.dispose);
+            final c = FlutterAnimatedLoginController(
+              initialStep: step == LoginStep.verify ? LoginStep.login : step,
+            );
+            addTearDown(c.dispose);
+
+            Future<String?> succeed() async {
+              if (redirect) {
+                // An auth listener that swaps the page a little later.
+                Future<void>.delayed(
+                  const Duration(milliseconds: 60),
+                  () => signedIn.value = true,
+                );
+              }
+              return null;
+            }
+
+            final login = FlutterAnimatedLogin(
+              controller: c,
+              loginType: LoginType.password,
+              loginConfig: const LoginConfig(
+                loginFieldInputType: LoginFieldInputType.email,
+              ),
+              verifyConfig: const VerifyConfig(startCooldownOnOpen: false),
+              onLogin: (_) => succeed(),
+              onSignup: (_) => succeed(),
+              onResetPassword: (_) => succeed(),
+              onVerify: (_) => succeed(),
+            );
+            await tester.pumpWidget(
+              MaterialApp(
+                home: ValueListenableBuilder<bool>(
+                  valueListenable: signedIn,
+                  builder:
+                      (context, value, _) => Navigator(
+                        pages: [
+                          if (!value)
+                            MaterialPage<void>(
+                              key: const ValueKey<String>('login'),
+                              child: login,
+                            )
+                          else
+                            const MaterialPage<void>(
+                              key: ValueKey<String>('home'),
+                              child: Scaffold(body: Text('HOME')),
+                            ),
+                        ],
+                        onDidRemovePage: (_) {},
+                      ),
+                ),
+              ),
+            );
+            await tester.pumpAndSettle();
+
+            Future<void> tapButton(String label) async {
+              final button = find.widgetWithText(FilledButton, label);
+              await tester.ensureVisible(button);
+              await tester.pumpAndSettle();
+              await tester.tap(button);
+            }
+
+            switch (step) {
+              case LoginStep.login:
+                c.prefill(
+                  identifier: 'ada@lovelace.dev',
+                  password: 'secret123',
+                );
+                await tester.pumpAndSettle();
+                await tapButton('Sign In');
+              case LoginStep.signup:
+                c.prefill(
+                  identifier: 'ada@lovelace.dev',
+                  password: 'Sup3rSecret!',
+                );
+                c.confirmPasswordController.text = 'Sup3rSecret!';
+                await tester.pumpAndSettle();
+                await tapButton('Create Account');
+              case LoginStep.resetPassword:
+                c.prefill(identifier: 'ada@lovelace.dev');
+                await tester.pumpAndSettle();
+                await tapButton('Reset Password');
+              case LoginStep.verify:
+                c.prefill(identifier: 'ada@lovelace.dev');
+                c.showOtp();
+                await tester.pumpAndSettle();
+                await tester.showKeyboard(find.byType(EditableText).first);
+                tester.testTextInput.enterText('123456');
+            }
+
+            final steps = <LoginStep>[];
+            void record() => steps.add(c.step);
+            c.addListener(record);
+            await _pumpOnlyRequestedFrames(tester, const Duration(seconds: 3));
+            c.removeListener(record);
+            expect(tester.takeException(), isNull);
+
+            if (redirect) {
+              expect(find.text('HOME'), findsOneWidget);
+              expect(
+                steps.contains(LoginStep.login) && step != LoginStep.login,
+                isFalse,
+                reason: 'flashed back to login: $steps',
+              );
+              expect(
+                c.identifierController.text,
+                'ada@lovelace.dev',
+                reason: 'the form was reset behind the redirect',
+              );
+            } else {
+              expect(c.step, LoginStep.login);
+              expect(c.identifierController.text, isEmpty);
+            }
+            await tester.pumpWidget(const SizedBox());
+            await tester.pump(const Duration(seconds: 5));
+          },
+        );
+      }
+    }
+  });
+
+  group('1.0.1 review', () {
+    const phoneField = ValueKey<String>(
+      'flutter_animated_login.identity.phone',
+    );
+
+    testWidgets(
+      'a country change after the phone field remounts does not throw',
+      (tester) async {
+        final c = FlutterAnimatedLoginController(initialCountryCode: 'US');
+        addTearDown(c.dispose);
+        await tester.pumpWidget(
+          _app(
+            FlutterAnimatedLogin(
+              controller: c,
+              loginConfig: const LoginConfig(
+                textFiledConfig: EmailPhoneTextFieldConfig(formatInput: true),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        c.prefill(identifier: '2125550100');
+        await tester.pumpAndSettle();
+        c.prefill(countryIsoCode: 'GB');
+        await tester.pumpAndSettle();
+        // Back to email mode, which unmounts the phone field, and in again.
+        c.reset();
+        await tester.pumpAndSettle();
+        c.prefill(identifier: '2125550100');
+        await tester.pumpAndSettle();
+        c.prefill(countryIsoCode: 'GB');
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(c.countryIsoCode, 'GB');
+      },
+    );
+
+    testWidgets('prefilling an international number into a mounted phone field '
+        'does not throw', (tester) async {
+      final c = FlutterAnimatedLoginController(initialCountryCode: 'US');
+      addTearDown(c.dispose);
+      await tester.pumpWidget(
+        _app(
+          FlutterAnimatedLogin(
+            controller: c,
+            loginConfig: const LoginConfig(
+              loginFieldInputType: LoginFieldInputType.phone,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(phoneField), '2125550100');
+      await tester.pumpAndSettle();
+      c.prefill(identifier: '+12125550199');
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      await tester.pumpAndSettle();
+      expect(c.identifier, '+12125550199');
+    });
+
+    testWidgets(
+      'host rebuilds with new country lists keep the field controller',
+      (tester) async {
+        final c = FlutterAnimatedLoginController(initialCountryCode: 'US');
+        addTearDown(c.dispose);
+        late StateSetter rebuild;
+        await tester.pumpWidget(
+          _app(
+            StatefulBuilder(
+              builder: (context, setState) {
+                rebuild = setState;
+                return FlutterAnimatedLogin(
+                  controller: c,
+                  loginConfig: LoginConfig(
+                    loginFieldInputType: LoginFieldInputType.phone,
+                    // A new list on every build.
+                    textFiledConfig: EmailPhoneTextFieldConfig(
+                      onlyCountries: ['US', 'GB', 'IN'].toList(),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byKey(phoneField), '2125550100');
+        await tester.pumpAndSettle();
+        TextEditingController shown() =>
+            tester
+                .widget<EditableText>(
+                  find.descendant(
+                    of: find.byKey(phoneField),
+                    matching: find.byType(EditableText),
+                  ),
+                )
+                .controller;
+        final first = shown();
+        for (var i = 0; i < 3; i++) {
+          rebuild(() {});
+          await tester.pump();
+        }
+        expect(identical(shown(), first), isTrue);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('a second tap while the reset waits does not submit again', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1000, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final c = FlutterAnimatedLoginController();
+      addTearDown(c.dispose);
+      var calls = 0;
+      await tester.pumpWidget(
+        _app(
+          FlutterAnimatedLogin(
+            controller: c,
+            loginType: LoginType.password,
+            loginConfig: const LoginConfig(
+              loginFieldInputType: LoginFieldInputType.email,
+            ),
+            onLogin: (_) async {
+              calls++;
+              return null;
+            },
+          ),
+        ),
+      );
+      c.prefill(identifier: 'ada@lovelace.dev', password: 'secret123');
+      await tester.pumpAndSettle();
+      final button = find.widgetWithText(FilledButton, 'Sign In');
+      await tester.ensureVisible(button);
+      await tester.pumpAndSettle();
+      final at = tester.getCenter(button);
+      await tester.tapAt(at);
+      await _pumpOnlyRequestedFrames(tester, const Duration(milliseconds: 96));
+      await tester.tapAt(at);
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await _pumpOnlyRequestedFrames(tester, const Duration(seconds: 2));
+      expect(calls, 1);
+      expect(c.step, LoginStep.login);
+      expect(c.isBusy, isFalse);
+    });
+
+    testWidgets('a step the app opens while the reset waits is kept', (
+      tester,
+    ) async {
+      final c = FlutterAnimatedLoginController();
+      addTearDown(c.dispose);
+      await tester.pumpWidget(
+        _app(
+          FlutterAnimatedLogin(
+            controller: c,
+            verifyConfig: const VerifyConfig(startCooldownOnOpen: false),
+            onSignup: (_) async => null,
+            onVerify: (_) async {
+              // The backend reports a new user; the app opens signup.
+              Future<void>.delayed(
+                const Duration(milliseconds: 60),
+                () => c.goTo(LoginStep.signup),
+              );
+              return null;
+            },
+          ),
+        ),
+      );
+      c.prefill(identifier: 'ada@lovelace.dev');
+      c.showOtp();
+      await tester.pumpAndSettle();
+      await tester.showKeyboard(find.byType(EditableText).first);
+      tester.testTextInput.enterText('123456');
+      await _pumpOnlyRequestedFrames(tester, const Duration(seconds: 2));
+      expect(c.step, LoginStep.signup);
+      expect(c.isBusy, isFalse);
+    });
+    testWidgets('the keyboard action key does not submit during a request', (
+      tester,
+    ) async {
+      final c = FlutterAnimatedLoginController();
+      addTearDown(c.dispose);
+      var calls = 0;
+      await tester.pumpWidget(
+        _app(
+          FlutterAnimatedLogin(
+            controller: c,
+            loginType: LoginType.password,
+            loginConfig: const LoginConfig(
+              loginFieldInputType: LoginFieldInputType.email,
+            ),
+            onLogin: (_) async {
+              calls++;
+              await Future<void>.delayed(const Duration(seconds: 1));
+              return 'stop';
+            },
+          ),
+        ),
+      );
+      c.prefill(identifier: 'ada@lovelace.dev', password: 'secret123');
+      await tester.pumpAndSettle();
+      await tester.showKeyboard(find.byType(EditableText).last);
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(c.isBusy, isTrue);
+      // The done action closed the keyboard; the user opens it again.
+      await tester.showKeyboard(find.byType(EditableText).last);
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+      expect(calls, 1);
+    });
+  });
 }
