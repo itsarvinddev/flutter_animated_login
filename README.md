@@ -320,10 +320,10 @@ where the user is. Call `showOtp` only when a code was sent some other way —
 returning `null` from `onLogin` already opens the code screen.
 
 > [!NOTE]
-> A controller you pass owns the form's state. The `controller` and
-> `initialValue` fields of `LoginConfig` and `VerifyConfig` field configs, and
-> `EmailPhoneTextFieldConfig.initialCountryCode`, are then ignored: pass
-> `identifierController`, `passwordController`, `otpController`,
+> A controller you pass owns the form's state. The `controller` fields of the
+> `LoginConfig` and `VerifyConfig` field configs, and
+> `EmailPhoneTextFieldConfig.initialValue` and `initialCountryCode`, are then
+> ignored: pass `identifierController`, `passwordController`, `otpController`,
 > `initialIdentifier` and `initialCountryCode` to the controller's constructor
 > instead.
 

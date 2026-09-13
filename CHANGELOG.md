@@ -5,12 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] - 2026-09-12
+## [1.0.0] - 2026-09-13
 
 The flow's state moved out of process-wide globals and into a per-instance
 controller you can drive yourself, the email field became a real email field,
 and every user-facing string became overridable. See
-[MIGRATION.md](MIGRATION.md) for an upgrade guide — most apps need only a
+[MIGRATION.md](https://github.com/itsarvinddev/flutter_animated_login/blob/main/MIGRATION.md) for an upgrade guide — most apps need only a
 dependency bump.
 
 ### Breaking
@@ -140,6 +140,15 @@ dependency bump.
   the right one left "Error" on screen over the app's home page for up to four
   seconds. Only the package's own error is dismissed; a message your callback
   shows is left alone.
+- **An international number typed into the default field keeps its country.**
+  Typing `+44 7700 900123` into the email-or-phone field switched to the phone
+  field at `+4` on the default country and treated the rest as national
+  digits; 0.0.15 sent `+1+447700900`. The field now waits for the calling code
+  and selects that country, so `onLogin` receives `+447700900123`.
+- **`EmailPhoneTextFieldConfig.initialValue` seeds the field once.** It was
+  handed to the phone field, which re-applied it every time it was rebuilt, so
+  a number the user had typed was replaced by the initial value again. It is
+  now ignored when you pass your own controller, as documented.
 - **No flash of the login form after a successful sign-in.** When the app
   navigated to its home screen from `onVerify` or `onLogin`, the package still
   reset its own screen behind the outgoing route, which visibly cross-faded

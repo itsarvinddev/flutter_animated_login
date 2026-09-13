@@ -4,6 +4,7 @@
 
 # --- build output and tool state (mirrors .gitignore) ---
 build/
+coverage/
 .dart_tool/
 .packages
 pubspec.lock

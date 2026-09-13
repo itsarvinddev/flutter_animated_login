@@ -328,9 +328,9 @@ If you want a code-only screen, switch to `LoginType.otp` — note that, unlike
 
 ## `PageConfig.useScaffold`
 
-Each screen provides its own `Scaffold`. If `FlutterAnimatedLogin` already sits
-inside yours — which the package's own example did — you had two, which paints
-a second background and shadows your `ScaffoldMessenger`.
+`FlutterAnimatedLogin` provides a `Scaffold` for the flow. If it already sits
+inside yours — which the package's own example did — you have two, which paints
+a second background and nests one `Scaffold` inside another.
 
 ```dart
 Scaffold(
