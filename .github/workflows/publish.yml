@@ -15,6 +15,10 @@ jobs:
   publish:
     name: Publish
     runs-on: ubuntu-latest
+    # Without automated publishing enabled on pub.dev, `pub publish` waits for
+    # an interactive sign-in that never comes; the v1.0.0 run sat there until
+    # it was cancelled. Fail instead of holding a runner for six hours.
+    timeout-minutes: 15
 
     # Forks inherit tags. Without this a fork pushing a v* tag starts a run
     # that can only ever fail, because pub.dev binds automated publishing to
