@@ -18,11 +18,10 @@ pubspec.lock
 *.swp
 migrate_working_dir/
 
-# --- large media that no consumer needs to compile the package ---
-# The 32 MB demo video sat in the archive for every release up to 0.0.15.
-# The screenshots stay: pubspec `screenshots:` points at them and pub.dev
-# renders them on the package page.
-video-1.mov
+# --- media ---
+# screenshots/ ships: pubspec `screenshots:` points into it and pub.dev renders
+# it on the package page. It is WebP and ~0.5 MB in total -- the 32 MB demo
+# video that shipped in every release up to 0.0.15 is gone from the repo.
 
 # --- the example's native scaffold ---
 # Six platform folders of generated boilerplate. example/lib and

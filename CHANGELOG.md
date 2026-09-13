@@ -121,6 +121,30 @@ dependency bump.
   with no explanation.
 - **Status messages no longer throw without a `ScaffoldMessenger`.** They use
   `maybeOf` and warn in debug instead.
+- **Navigating during a screen transition no longer throws.** Each screen
+  built its own `Scaffold`, so while one cross-faded into the next, two
+  Scaffolds in the same route both drew the current SnackBar under one Hero
+  tag. Navigating in that window — go_router's `context.go` or an auth
+  redirect straight after an error, for instance — threw "There are multiple
+  heroes that share the same tag within a subtree". The flow now has a single
+  Scaffold outside the transition.
+- **Phone numbers read correctly in right-to-left layouts.** The phone field
+  inherited RTL, so the bidi algorithm reordered its digit groups: the UAE
+  number `50 123 4567` displayed as `4567 123 50`. Phone numbers and email
+  addresses are now always laid out left to right, in the form and on the code
+  screen.
+- **"Resend OTP" only appears when there is something to resend with.** Without
+  `onResendOtp` the button showed anyway, and tapping it restarted the
+  countdown as though a new code were on its way.
+- **A success dismisses the error it follows.** Entering a wrong code and then
+  the right one left "Error" on screen over the app's home page for up to four
+  seconds. Only the package's own error is dismissed; a message your callback
+  shows is left alone.
+- **No flash of the login form after a successful sign-in.** When the app
+  navigated to its home screen from `onVerify` or `onLogin`, the package still
+  reset its own screen behind the outgoing route, which visibly cross-faded
+  back to an empty form. It now skips the reset once the app has navigated
+  away.
 - **`SignupData` compares by value.** Its `operator ==` compared the
   `additionalSignupData` maps by identity, so two payloads carrying the same
   entries were never equal.
@@ -140,8 +164,9 @@ dependency bump.
   express. Values arrive in `SignupData.additionalSignupData`.
 - **`LoginType.otpAndPassword` is now implemented.** It renders a password
   field plus a link that switches to the one-time-code path, and
-  `LoginData.method` tells you which ran. It previously behaved exactly like
-  `LoginType.otp`.
+  `LoginData.method` tells you which ran. It previously showed a code-only
+  screen with no password field, and on success cleared the form rather than
+  opening the code screen.
 - **`PasswordPolicy`** with `minLength`, `maxLength`, character-class rules,
   `disallow` patterns and a `minStrength` bar, plus `PasswordPolicy.standard()`
   and `.strict()`. Composes with your own `validator` rather than replacing it.
@@ -163,7 +188,8 @@ dependency bump.
   `providerNeedsSignUpCallback` now work.** Both were declared, documented and
   never read.
 - **`FormMessages` covers every user-facing string** — it grew from 17 fields
-  to 55, absorbing the 26 English literals that were hardcoded in the screens,
+  to 60, absorbing the 26 English literals that were hardcoded in the screens
+  and the country picker's strings,
   and gained `copyWith` and a `fallback` constant.
 - **Configurable OTP resend** — `VerifyConfig.resendCooldown` (was hardcoded to
   60 seconds), `startCooldownOnOpen`, `maxResendAttempts`, `countdownBuilder`,
@@ -233,7 +259,12 @@ Everything below still works and is scheduled for removal in 2.0.0:
 
 - **The published archive is roughly 600 KB instead of 31 MB.** A 32 MB demo
   video sat in the repository root with no `.pubignore`, so every consumer
-  downloaded it on every `pub get`.
+  downloaded it on every `pub get`. The video and the six 0.0.x screenshots are
+  gone from the repository, replaced by WebP captures of 1.0.0 in
+  `screenshots/`, including an animated demo.
+- **A rewritten README**, with a screenshot gallery, the callback contract,
+  recipes, troubleshooting, and copy-paste prompts for AI coding assistants —
+  each prompt run on a fresh app before it was published.
 - `homepage`, `repository`, `issue_tracker` and `documentation` point at
   `itsarvinddev`, where the repository actually lives; the old `rvndsngwn` URLs
   404ed. Added `funding:`.

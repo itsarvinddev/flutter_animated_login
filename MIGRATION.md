@@ -88,7 +88,7 @@ because this package happened to provide it, declare it yourself:
 
 ```yaml
 dependencies:
-  signals: ^7.1.0
+  signals: ^6.0.2   # what 0.0.15 used; 7.x is its own breaking upgrade
 ```
 
 ---
@@ -123,19 +123,18 @@ class _MyLoginState extends State<MyLogin> {
   @override
   Widget build(BuildContext context) => FlutterAnimatedLogin(
         controller: controller,
-        onLogin: (data) async {
-          final error = await api.sendOtp(data.name);
-          if (error != null) return error;
-          controller.showOtp();      // advance once *your* send succeeded
-          return null;
-        },
+        // Returning null advances to the code screen by itself; return a
+        // message instead to stay on the login screen.
+        onLogin: (data) async => api.sendOtp(data.name),
       );
 }
 ```
 
 `controller.goTo(LoginStep.signup)`, `controller.reset()`,
 `controller.prefill(identifier: deepLinkEmail)` and `controller.step` are all
-available. Passing a controller stays optional — one is created and disposed
+available. Once you pass a controller, it owns the text controllers: the
+`controller` fields inside `LoginConfig` and `VerifyConfig` are ignored, so
+hand any of yours to the `FlutterAnimatedLoginController` constructor. Passing a controller stays optional — one is created and disposed
 internally when you do not.
 
 ---
@@ -307,9 +306,9 @@ LoginConfig(showSignupLink: false, showForgotLink: false)
 
 ## `LoginType.otpAndPassword` behaves differently
 
-It used to be identical to `LoginType.otp` — no password field, no choice, and
-no advance to the verify screen. It now renders a password field plus a link
-that switches to the one-time-code path.
+It used to show a code-only screen — no password field and no choice — and on
+success it cleared the form instead of opening the verify screen. It now renders
+a password field plus a link that switches to the one-time-code path.
 
 Read `LoginData.method` to tell them apart:
 
@@ -321,8 +320,9 @@ onLogin: (data) async => switch (data.method) {
 },
 ```
 
-If you were using `otpAndPassword` and want the old behaviour, switch to
-`LoginType.otp`.
+If you want a code-only screen, switch to `LoginType.otp` — note that, unlike
+0.0.x's `otpAndPassword`, it opens the code screen when `onLogin` returns
+`null`, so return `null` only once the code has actually been sent.
 
 ---
 
@@ -363,7 +363,7 @@ These still compile and behave as before. They will go in 2.0.0.
 
 None of these are required.
 
-- **Translate everything.** `FormMessages` grew from 17 fields to 55, absorbing
+- **Translate everything.** `FormMessages` grew from 17 fields to 60, absorbing
   the 26 English strings that were hardcoded in the screens. A custom
   `FormMessages` now also survives to the signup and reset screens, which it
   did not before.

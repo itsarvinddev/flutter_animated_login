@@ -8,10 +8,18 @@ documentation: https://github.com/itsarvinddev/flutter_animated_login#readme
 funding:
   - https://github.com/sponsors/itsarvinddev
 screenshots:
-  - description: "Login Screen with Phone/Email"
-    path: image-1.png
-  - description: "OTP Verification Screen"
-    path: image-2.png
+  - description: "Sign in with an email address or a phone number"
+    path: screenshots/login-email.webp
+  - description: "One-time code screen with resend countdown"
+    path: screenshots/otp.webp
+  - description: "Sign up with extra fields, a password strength meter and consent"
+    path: screenshots/signup.webp
+  - description: "Branded full-width social sign-in buttons"
+    path: screenshots/social-buttons.webp
+  - description: "Dark mode"
+    path: screenshots/dark-mode.webp
+  - description: "Wide layout on tablet, desktop and web"
+    path: screenshots/tablet.webp
 
 topics:
   - login
